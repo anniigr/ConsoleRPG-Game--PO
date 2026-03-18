@@ -60,6 +60,9 @@ namespace ConsoleRPG.Engine
                 case ConsoleKey.Escape: 
                     isRunning = false; 
                     break;
+                default:
+                player.LogMessage = "Unknown key";
+                break;
             }
         }
 
@@ -96,6 +99,9 @@ namespace ConsoleRPG.Engine
                     isInventoryMode = false;
                     player.LogMessage = "Equipment closed";
                     break;
+                default:
+                player.LogMessage = "Unknown key in inventory";
+                break;
             }
         }
     }

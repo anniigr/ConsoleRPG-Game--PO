@@ -53,8 +53,6 @@ public abstract class TwoHandedWeapon : Weapon
         p.Inventory.Add(this);
         p.LogMessage = $"Unequiped {Name}.";
     }
-    
-
    
 } 
 public class Sword : OneHandedWeapon { public override char Symbol => '†'; public override string Name => "Sword"; public Sword() { damage = 6; }}

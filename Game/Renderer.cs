@@ -1,4 +1,5 @@
 using System;
+using System.Security.Cryptography;
 using System.Text;
 using ConsoleRPG.Entities;
 using ConsoleRPG.World;
@@ -22,7 +23,14 @@ namespace ConsoleRPG.Engine
             Console.SetCursorPosition(0, 0);
 
             Cell playerCell = map.GetCell(player.X, player.Y);
-            string floorInfo = playerCell.Items.Count > 0 ? $"Floor: {playerCell.Items[playerCell.Items.Count - 1].Name}, press [E] to pick up" : "Empty floor";
+            string floorInfo = "Empty floor";
+
+            if (playerCell != null)
+            {
+                if (playerCell.Items.Count > 0)
+                    floorInfo = "Press [E] to pick up";
+                else
+                    floorInfo = "Empty floor"; }
 
             for (int y = 0; y < map.Height; y++)
             {
@@ -30,8 +38,11 @@ namespace ConsoleRPG.Engine
                 {
                     if (x == player.X && y == player.Y)
                         screen.Append('¶');
-                    else
-                        screen.Append(map.GetCell(x, y).GetDrawSymbol());
+                    else 
+                    {
+                        Cell cell = map.GetCell(x, y);
+                        screen.Append(cell != null ? cell.GetDrawSymbol() : '#');
+                    }
                 }
 
                 screen.Append("   | ");
@@ -79,14 +90,29 @@ namespace ConsoleRPG.Engine
                     5 => $"Left arm:  {(player.LeftHand != null ? player.LeftHand.Name : "[Empty]")}",
                     6 => $"Right arm: {(player.RightHand != null ? player.RightHand.Name : "[Empty]")}",
                     7 => $"Damage:  {player.GetTotalDamage()}",
-                    8 => "--- ENVIROMENT ---",
-                    9 => floorInfo,
+                    8 => "--- ACTIONS ---",
+
+                    9 => BuildActionsLine(),   
+
+                    10 => "--- ENVIRONMENT ---",
+                    11 => floorInfo,
+
                     _ => ""
                 };
             }
 
             
             return line.PadRight(panelWidth);
+        }
+
+        private string BuildActionsLine()
+        {
+            string line = "[WASD] Move  [I] Inventory  [ESC] Exit  ";
+
+            if (map.Features.HasItem || map.Features.HasWeapon || map.Features.HasCurrency)
+                line += "[E] Pick up  ";
+
+            return line;
         }
     }
 }

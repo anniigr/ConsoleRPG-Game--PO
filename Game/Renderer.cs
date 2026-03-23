@@ -10,15 +10,21 @@ namespace ConsoleRPG.Engine
     {
         private Map map;
         private Player player;
+        private ActionManager actionManager;
 
-        public Renderer(Map map, Player player)
+        public Renderer(Map map, Player player, ActionManager actionManager)
         {
             this.map = map;
             this.player = player;
+            this.actionManager = actionManager;
         }
 
-        public void DrawFrame(bool isInventoryMode, int invCursor)
+       public void DrawFrame(GameEngine engine)
         {
+            
+            bool isInventoryMode = engine.isInventoryOpened;
+            int invCursor = engine.InventoryCursor;
+
             StringBuilder screen = new StringBuilder();
             Console.SetCursorPosition(0, 0);
 
@@ -30,7 +36,8 @@ namespace ConsoleRPG.Engine
                 if (playerCell.Items.Count > 0)
                     floorInfo = "Press [E] to pick up";
                 else
-                    floorInfo = "Empty floor"; }
+                    floorInfo = "Empty floor";
+            }
 
             for (int y = 0; y < map.Height; y++)
             {
@@ -38,7 +45,7 @@ namespace ConsoleRPG.Engine
                 {
                     if (x == player.X && y == player.Y)
                         screen.Append('¶');
-                    else 
+                    else
                     {
                         Cell cell = map.GetCell(x, y);
                         screen.Append(cell != null ? cell.GetDrawSymbol() : '#');
@@ -46,7 +53,7 @@ namespace ConsoleRPG.Engine
                 }
 
                 screen.Append("   | ");
-                screen.Append(GetLine(y, floorInfo, isInventoryMode, invCursor));
+                screen.Append(GetLine(y, floorInfo, isInventoryMode, invCursor, engine));
                 screen.AppendLine();
             }
 
@@ -54,23 +61,25 @@ namespace ConsoleRPG.Engine
             screen.AppendLine($"LOG: {player.LogMessage}".PadRight(80));
 
             Console.Write(screen.ToString());
+            
         }
 
-        private string GetLine(int lineIndex, string floorInfo, bool isInventoryMode, int invCursor)
-        {
+       private string GetLine(int lineIndex, string floorInfo, bool isInventoryMode, int invCursor, GameEngine engine)
+       {
             string line = ""; 
             int panelWidth = 50; 
+            if (engine.IsHelpOpened)
+            {
+                return GetHelpLine(lineIndex, engine).PadRight(panelWidth);
+            }
 
             if (isInventoryMode)
             {
                 if (lineIndex == 0) line = "--- EQUIPMENT MODE ---";
-                else if (lineIndex == 1) line = "[W/S] Choose | [L] Take to the left arm | [R] Take to the right arm ";
-                else if (lineIndex == 2) line = "[Q] Throw it out | [1] Take off left | [2] Take off right";
-                else if (lineIndex == 3) line = "[I] or [ESC] Close";
-                else if (lineIndex == 4) line = "----------------------";
+                else if (lineIndex == 1) line = "[H] Help";
                 else
                 {
-                    int itemIdx = lineIndex - 5;
+                    int itemIdx = lineIndex - 2 ;
                     if (itemIdx >= 0 && itemIdx < player.Inventory.Count)
                     {
                         string pointer = (itemIdx == invCursor) ? "> " : "  ";
@@ -90,12 +99,9 @@ namespace ConsoleRPG.Engine
                     5 => $"Left arm:  {(player.LeftHand != null ? player.LeftHand.Name : "[Empty]")}",
                     6 => $"Right arm: {(player.RightHand != null ? player.RightHand.Name : "[Empty]")}",
                     7 => $"Damage:  {player.GetTotalDamage()}",
-                    8 => "--- ACTIONS ---",
-
-                    9 => BuildActionsLine(),   
-
-                    10 => "--- ENVIRONMENT ---",
-                    11 => floorInfo,
+                    8 => "--- ENVIRONMENT ---",
+                    9 => floorInfo,
+                    10 => "[H] Help",
 
                     _ => ""
                 };
@@ -104,15 +110,64 @@ namespace ConsoleRPG.Engine
             
             return line.PadRight(panelWidth);
         }
-
-        private string BuildActionsLine()
+        private string GetHelpLine(int lineIndex, GameEngine engine)
         {
-            string line = "[WASD] Move  [I] Inventory  [ESC] Exit  ";
+            var actions = actionManager.GetAvailableActions(engine)
+                .Select(a => $"[{FormatKey(a.key)}] {ShortName(a.Name)}")
+                .ToList();
 
-            if (map.Features.HasItem || map.Features.HasWeapon || map.Features.HasCurrency)
-                line += "[E] Pick up  ";
+            if (lineIndex == 0) return "--- HELP ---";
+            if (lineIndex == 1) return "Available actions:";
+            if (lineIndex == 2) return "";
 
-            return line;
+            int actionIndex = lineIndex - 3;
+
+            if (actionIndex >= 0 && actionIndex < actions.Count)
+                return actions[actionIndex];
+
+            if (lineIndex == actions.Count + 3)
+                return "";
+
+            if (lineIndex == actions.Count + 4)
+                return "Press [H] to close";
+
+            return "";
         }
+        private string FormatKey(ConsoleKey key)
+        {
+            return key switch
+            {
+                ConsoleKey.D0 => "0",
+                ConsoleKey.D1 => "1",
+                ConsoleKey.D2 => "2",
+                ConsoleKey.D3 => "3",
+                ConsoleKey.D4 => "4",
+                ConsoleKey.D5 => "5",
+                ConsoleKey.D6 => "6",
+                ConsoleKey.D7 => "7",
+                ConsoleKey.D8 => "8",
+                ConsoleKey.D9 => "9",
+                _ => key.ToString()
+            };
+        }
+        private string ShortName(string name)
+        {
+            return name switch
+            {
+                "Move player/cursor up" => "Move up",
+                "Move player/cursor down" => "Move down",
+                "Move/Equipt left" => "Move left",
+                "Move/Equipt right" => "Move right",
+                "Inventory Switch" => "Inventory",
+                "Quit Game / throw down" => "Quit/Drop",
+                "PickUp" => "Pick up",
+                "Equipt left" => "Equip left",
+                "Equipt right" => "Equip right",
+                "Unequip Left" => "Unequip left",
+                "UnequipRight" => "Unequip right",
+                _ => name
+            };
+        }
+
     }
 }

@@ -6,18 +6,46 @@ namespace ConsoleRPG.Engine
 {
     public class GameEngine
     {
-        private Map map;
-        private Player player;
+        public Map map {get; private set;}
+        public Player player {get; private set;}
         private Renderer renderer;
+        private ActionManager actionManager;
+
         private bool isRunning;
         private bool isInventoryMode;
         private int invCursor;
+
+        public int InventoryCursor => invCursor;
+        public bool isInventoryOpened => isInventoryMode;
+        private bool isHelpMode;
+        public bool IsHelpOpened => isHelpMode;
+
+        public void ToggleHelp()
+        {
+            isHelpMode = !isHelpMode;
+            player.LogMessage = isHelpMode ? "Help opened" : "Help closed";
+        }
 
         public GameEngine()
         {
             map = new Map();
             player = new Player(0,0);
-            renderer = new Renderer(map, player);
+            actionManager = new ActionManager();
+
+            actionManager.AddAction(new MoveUp());
+            actionManager.AddAction(new MoveDown());
+            actionManager.AddAction(new MoveLeft());
+            actionManager.AddAction(new MoveRight());
+            actionManager.AddAction(new PickUp());
+            actionManager.AddAction(new InventorySwitch());
+            actionManager.AddAction(new QuitGame());
+            actionManager.AddAction(new EquipLeft());
+            actionManager.AddAction(new EquipRight());
+            actionManager.AddAction(new UnequipLeft());
+            actionManager.AddAction(new UnequipRight());
+            actionManager.AddAction(new HelpSwitch());
+
+            renderer = new Renderer(map, player, actionManager);
             isRunning = true;
             isInventoryMode = false;
         }
@@ -26,7 +54,7 @@ namespace ConsoleRPG.Engine
         {
             while (isRunning)
             {
-                renderer.DrawFrame(isInventoryMode, invCursor);
+                renderer.DrawFrame(this);
                 HandleInput();
             }
         }
@@ -36,73 +64,54 @@ namespace ConsoleRPG.Engine
             var keyInfo = Console.ReadKey(true);
             var key = keyInfo.Key;
 
-            if (isInventoryMode)
-                HandleInventoryInput(key);
-            else
-                HandleMapInput(key);
-        }
-
-        private void HandleMapInput(ConsoleKey key)
-        {
-            switch (key)
+            if (IsHelpOpened)
             {
-                case ConsoleKey.W: player.Move(0, -1, map); break;
-                case ConsoleKey.S: player.Move(0, 1, map); break;
-                case ConsoleKey.A: player.Move(-1, 0, map); break;
-                case ConsoleKey.D: player.Move(1, 0, map); break;
-                case ConsoleKey.E: player.PickUp(map); break;
-                case ConsoleKey.I: 
-                    isInventoryMode = true; 
-                    invCursor = 0;
-                    player.LogMessage = "Equipment opened";
-                    break;
-                case ConsoleKey.Q: 
-                case ConsoleKey.Escape: 
-                    isRunning = false; 
-                    break;
-                default:
+                if (key == ConsoleKey.H)
+                {
+                    ToggleHelp();
+                }
+                else
+                {
+                    player.LogMessage = "Press H to close help";
+                }
+                return;
+            }
+
+            var action = actionManager.FindAction(key);
+
+            if (action == null)
                 player.LogMessage = "Unknown key";
-                break;
-            }
+            else if (!action.isExecutable(this))
+                player.LogMessage = "Action is not available";
+            else
+                action.Execute(this);
         }
 
-        private void HandleInventoryInput(ConsoleKey key)
+        public void SetOtherInventoryMode()
         {
-            if (player.Inventory.Count == 0) invCursor = 0;
-            else if (invCursor >= player.Inventory.Count) invCursor = player.Inventory.Count - 1;
-
-            switch (key)
+            if (isHelpMode)
             {
-                case ConsoleKey.W: 
-                    if (invCursor > 0) invCursor--; 
-                    break;
-                case ConsoleKey.S: 
-                    if (invCursor < player.Inventory.Count - 1) invCursor++; 
-                    break;
-                case ConsoleKey.L:
-                    if (player.Inventory.Count > 0) player.Inventory[invCursor].EquipLeft(player);
-                    break;
-                case ConsoleKey.R:
-                    if (player.Inventory.Count > 0) player.Inventory[invCursor].EquipRight(player);
-                    break;
-                case ConsoleKey.Q:
-                    if (player.Inventory.Count > 0)
-                    {
-                        player.DropItem(player.Inventory[invCursor], map);
-                        if (invCursor > 0) invCursor--; 
-                    }
-                    break;
-                case ConsoleKey.D1: player.UnequipLeft(); break;
-                case ConsoleKey.D2: player.UnequipRight(); break;
-                case ConsoleKey.I:
-                case ConsoleKey.Escape:
-                    isInventoryMode = false;
-                    player.LogMessage = "Equipment closed";
-                    break;
-                default:
-                player.LogMessage = "Unknown key in inventory";
-                break;
+                player.LogMessage = "Close help first";
+                return;
             }
+
+            isInventoryMode = !isInventoryMode;
+            if (isInventoryMode)
+            {
+                invCursor = 0;
+                player.LogMessage = "Inventory opened";
+            }
+            else
+            {
+                player.LogMessage = "Inventory closed";
+            }
+        }
+        public void MoveInventoryCursorUp() => invCursor--;
+        public void MoveInventoryCursorDown() => invCursor++;
+        
+        public void Quit ()
+        {
+            isRunning = false;
         }
     }
 }

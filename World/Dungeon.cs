@@ -1,15 +1,14 @@
 using ConsoleRPG.Items;
 namespace ConsoleRPG.World;
+
 public static class Rng
 {
     public static Random Instance = new Random();
 }
-
 public interface IDungeonStep
 {
     void Apply(Map map);
 }
-
 public class EmptyDungeon : IDungeonStep
 {
     public void Apply (Map map)
@@ -19,7 +18,6 @@ public class EmptyDungeon : IDungeonStep
                 map.SetCell(x,y, new Cell(new Floor()));
     }
 }
-
 public class FilledDungeon : IDungeonStep
 {
     public void Apply (Map map)
@@ -136,10 +134,7 @@ public class ItemsGenerator : IDungeonStep {
             }
             attempts ++;
         }
-        
-    }
-
-        
+    }   
 }
 public class WeaponsGenerator : IDungeonStep {
     int weaponsCount;
@@ -193,7 +188,7 @@ public class CurrencyGenerator : IDungeonStep {
         Random rand =Rng.Instance;
         map.Features.HasCurrency = true;
         int placed = 0, attempts = 0;
-        while (placed < coinCount){
+        while (placed < coinCount && attempts < 1000){
             int startX = rand.Next(1,map.Width - 1);
             int startY = rand.Next(1,map.Height - 1);
             Cell cell = map.GetCell(startX,startY);
@@ -204,8 +199,7 @@ public class CurrencyGenerator : IDungeonStep {
                 cell.Items.Add(item);
                 placed ++;
             }
-        }
-        
+        }   
     }
 }
 

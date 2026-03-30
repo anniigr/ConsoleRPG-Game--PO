@@ -28,7 +28,9 @@ namespace ConsoleRPG.Engine
 
         public GameEngine()
         {
-            map = new Map();
+            var director = new DungeonDirector();
+
+            map = director.CreateStandardDungeon();
             player = new Player(0,0);
             actionManager = new ActionManager();
 

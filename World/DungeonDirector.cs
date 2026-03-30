@@ -1,42 +1,48 @@
-using ConsoleRPG.Items;
-
 namespace ConsoleRPG.World;
-public static class DungeonTemplate
+
+
+public class DungeonDirector
 {
-    public static void ApplyStandardDungeon(Map map)
+    public Map CreateStandardDungeon()
     {
-        new DungeonBuilder()
+        return new DungeonBuilder()
+            .SetSize(40, 20)
             .AddStep(new FilledDungeon())
             .AddStep(new StartingExit())
-            .AddStep(new CentralRoom(5,5))
+            .AddStep(new CentralRoom(5, 5))
             .AddStep(new RandomCorridor(50))
             .AddStep(new ItemsGenerator(5))
             .AddStep(new WeaponsGenerator(2))
-            .Build(map);
+            .Build();
     }
-    public static void ApplyStandardLabyrinth(Map map)
+
+    public Map CreateStandardLabyrinth()
     {
-        new DungeonBuilder()
+        return new DungeonBuilder()
+            .SetSize(40, 20)
             .AddStep(new FilledDungeon())
             .AddStep(new RandomCorridor(150))
             .AddStep(new ItemsGenerator(5))
             .AddStep(new WeaponsGenerator(2))
-            .Build(map);
-    }
-    public static void ApplyEmptyArena(Map map)
-    {
-        new DungeonBuilder()
-            .AddStep(new EmptyDungeon())
-            .Build(map);
+            .Build();
     }
 
-    public static void ApplyTreasury(Map map)
+    public Map CreateEmptyArena()
     {
-        new DungeonBuilder()
-        .AddStep(new FilledDungeon())
+        return new DungeonBuilder()
+            .SetSize(40, 20)
+            .AddStep(new EmptyDungeon())
+            .Build();
+    }
+
+    public Map CreateTreasury()
+    {
+        return new DungeonBuilder()
+            .SetSize(40, 20)
+            .AddStep(new FilledDungeon())
             .AddStep(new StartingExit())
             .AddStep(new RandomCorridor(50))
             .AddStep(new CurrencyGenerator(10))
-            .Build(map);
+            .Build();
     }
 }

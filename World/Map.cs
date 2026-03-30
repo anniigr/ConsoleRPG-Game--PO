@@ -3,20 +3,17 @@ namespace ConsoleRPG.World;
 
 public class Map
 {
-    public int Width = 40;
-    public int Height = 20;
+    public int Width;
+    public int Height;
     private Cell[,] grid;
     public MapFeatures Features = new MapFeatures();
 
-    public Map()
+    public Map(int width = 40, int height = 20)
     {
+        Width = width;
+        Height = height;
         grid = new Cell[Width, Height];
-        InitializeMap();
-    }
-    public void InitializeMap()
-    {
         Features = new MapFeatures();
-        DungeonTemplate.ApplyStandardDungeon(this);
     }
 
     public Cell GetCell(int i, int j)

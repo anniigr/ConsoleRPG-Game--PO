@@ -185,6 +185,11 @@ public class ActionManager
     {
         return list.FirstOrDefault(a => a.key == key);
     }
+    public IAction? FindActionByType<T>() where T : IAction
+    {
+        return list.FirstOrDefault(a => a is T);
+        
+    }
     public List<IAction> GetAvailableActions(GameEngine engine)
     {
         return list.Where(a => a.isExecutable(engine)).ToList();

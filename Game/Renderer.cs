@@ -33,8 +33,12 @@ namespace ConsoleRPG.Engine
 
             if (playerCell != null)
             {
-                if (playerCell.Items.Count > 0)
-                    floorInfo = "Press [E] to pick up";
+                if (playerCell.Items.Count > 0){
+                    var PickUpKey = actionManager.FindActionByType<PickUp>();
+                    if (PickUpKey != null) {
+                    floorInfo = $"Press {FormatKey(PickUpKey.key)} to pick up";
+                    }
+                }
                 else
                     floorInfo = "Empty floor";
             }

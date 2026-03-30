@@ -217,31 +217,3 @@ public class StartingExit : IDungeonStep
         }
     }
 }
-
-public class DungeonBuilder
-{
-    List<IDungeonStep> steps;
-    public DungeonBuilder()
-    {
-        steps = new List<IDungeonStep>();
-    }
-    public DungeonBuilder AddStep(IDungeonStep step)
-    {
-        steps.Add(step);
-        return this;
-    }
-    public void Build(Map map)
-    {
-        if (steps.Count == 0)
-        throw new InvalidOperationException("Dungeon must have at least one step.");
-
-        if (!(steps[0] is EmptyDungeon || steps[0] is FilledDungeon))
-        throw new InvalidOperationException("First step must be EmptyDungeon or FilledDungeon.");
-
-
-        foreach (var step in steps)
-        {
-            step.Apply(map);
-        }
-    }
-} 

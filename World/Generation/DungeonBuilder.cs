@@ -1,12 +1,12 @@
 namespace ConsoleRPG.World;
 
-public class DungeonBuilder
+public class DungeonBuilder : IDungeonBuilder
 {
     List<IDungeonStep> steps;
     private int width = 40;
     private int height = 20;
 
-    public DungeonBuilder SetSize(int width, int height)
+    public IDungeonBuilder SetSize(int width, int height)
     {
         this.width = width;
         this.height = height;
@@ -16,7 +16,7 @@ public class DungeonBuilder
     {
         steps = new List<IDungeonStep>();
     }
-    public DungeonBuilder AddStep(IDungeonStep step)
+    public IDungeonBuilder AddStep(IDungeonStep step)
     {
         steps.Add(step);
         return this;

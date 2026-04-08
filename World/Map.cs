@@ -6,14 +6,12 @@ public class Map
     public int Width;
     public int Height;
     private Cell[,] grid;
-    public MapFeatures Features = new MapFeatures();
 
     public Map(int width = 40, int height = 20)
     {
         Width = width;
         Height = height;
         grid = new Cell[Width, Height];
-        Features = new MapFeatures();
     }
 
     public Cell GetCell(int i, int j)

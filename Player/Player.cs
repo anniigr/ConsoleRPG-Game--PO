@@ -1,8 +1,11 @@
 using System.Security.Cryptography.X509Certificates;
+using ConsoleRPG.Engine;
 using ConsoleRPG.Items;
 using ConsoleRPG.World;
+using ConsoleRPG.Combat;
 namespace ConsoleRPG.Entities;
 
+// Reciever
 public class Player
 {
     public int X {get; private set;}
@@ -54,7 +57,14 @@ public class Player
         int newY = Y + dy;
 
         Cell target = map.GetCell(newX, newY);
-        if (target != null && target.Terrain.IsPassable())
+        if (target == null ) return;
+        if (target.Enemy != null)
+        {
+            AttackEnemy(target.Enemy, new NormalAttack(this));
+            if (target.Enemy.Health <= 0) target.Enemy = null;
+            return;
+        }
+        if (target.Terrain.IsPassable())
         {
             X = newX;
             Y = newY;
@@ -64,6 +74,31 @@ public class Player
         {
             LogMessage = "The wall is blocking way!";
         }
+        if (Health <= 0)
+        {
+            LogMessage = "GAME OVER. You died in the dungeon.";
+        }
+    }
+    public void AttackEnemy(Enemy enemy, IAttackVisitor attackType)
+    {
+        int totalDamage = 0;
+        int totalDefense = 0;
+
+        void ApplyHand(Item? hand) {
+            if (hand == null) return;
+            hand.Accept(attackType);
+            totalDamage += attackType.ResultDamage;
+            totalDefense += attackType.ResultDefense;
+        }
+
+        ApplyHand(RightHand);
+        if (LeftHand != RightHand) ApplyHand(LeftHand);
+        enemy.TakeDamage(totalDamage);
+        
+        int damageFromEnemy = Math.Max(0, enemy.AttackValue - totalDefense);
+        Health -= damageFromEnemy;
+
+        LogMessage = $"You used {attackType.GetType().Name}. Out: {totalDamage} dmg, Defended: {totalDefense}. Taken: {damageFromEnemy} dmg.";
     }
     public void PickUp(Map map)
     {

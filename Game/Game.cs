@@ -4,116 +4,61 @@ using ConsoleRPG.World;
 
 namespace ConsoleRPG.Engine
 {
-    public class GameEngine
+    // Client
+    public class GameEngine 
     {
         public Map map {get; private set;}
         public Player player {get; private set;}
-        private Renderer renderer;
-        private ActionManager actionManager;
+        private Renderer _renderer;
+        private ActionManager _actionManager;
+        private IGameState _currentState;
 
-        private bool isRunning;
-        private bool isInventoryMode;
-        private int invCursor;
-
-        public int InventoryCursor => invCursor;
-        public bool isInventoryOpened => isInventoryMode;
-        private bool isHelpMode;
-        public bool IsHelpOpened => isHelpMode;
-
-        public void ToggleHelp()
-        {
-            isHelpMode = !isHelpMode;
-            player.LogMessage = isHelpMode ? "Help opened" : "Help closed";
-        }
+        private bool _isRunning = true;
 
         public GameEngine()
         {
-            var director = new DungeonDirector();
+            IDungeonBuilder debugBuilder = new LoggingDungeonBuilder();
+            var director = new DungeonDirector(debugBuilder);
 
             map = director.CreateStandardDungeon();
             player = new Player(0,0);
-            actionManager = new ActionManager();
-
-            actionManager.AddAction(new MoveUp());
-            actionManager.AddAction(new MoveDown());
-            actionManager.AddAction(new MoveLeft());
-            actionManager.AddAction(new MoveRight());
-            actionManager.AddAction(new PickUp());
-            actionManager.AddAction(new InventorySwitch());
-            actionManager.AddAction(new QuitGame());
-            actionManager.AddAction(new EquipLeft());
-            actionManager.AddAction(new EquipRight());
-            actionManager.AddAction(new UnequipLeft());
-            actionManager.AddAction(new UnequipRight());
-            actionManager.AddAction(new HelpSwitch());
-
-            renderer = new Renderer(map, player, actionManager);
-            isRunning = true;
-            isInventoryMode = false;
+            _currentState = new MapState();
+            _renderer = new Renderer(map, player);
+            _actionManager = new ActionManager();
         }
-
+        public void ChangeState (IGameState newGameState) => _currentState = newGameState;
+        public void Quit () =>_isRunning = false;
+        public void ExcecuteAction (ConsoleKey key)
+        {
+            var action = _actionManager.FindAction(key);
+            if (action != null && action.IsExecutable(this))
+            {
+                action.Execute(this);
+            }
+        }
         public void Run()
         {
-            while (isRunning)
+            while (_isRunning)
             {
-                renderer.DrawFrame(this);
-                HandleInput();
+                _currentState.Draw(_renderer,this);
+                var key = Console.ReadKey(true).Key;
+                _currentState.Update(this,key);
             }
         }
-
-        private void HandleInput()
+        public string GetFloorInfo()
         {
-            var keyInfo = Console.ReadKey(true);
-            var key = keyInfo.Key;
-
-            if (IsHelpOpened)
+            var cell = map.GetCell(player.X, player.Y);
+            if (cell == null) return "Void";
+            
+            if (cell.Items.Count > 0)
             {
-                if (key == ConsoleKey.H)
-                {
-                    ToggleHelp();
-                }
-                else
-                {
-                    player.LogMessage = "Press H to close help";
-                }
-                return;
+                return cell.Items.Count > 1 
+                    ? $"Items here ({cell.Items.Count})" 
+                    : $"Item: {cell.Items[0].Name}";
             }
-
-            var action = actionManager.FindAction(key);
-
-            if (action == null)
-                player.LogMessage = "Unknown key";
-            else if (!action.isExecutable(this))
-                player.LogMessage = "Action is not available";
-            else
-                action.Execute(this);
+            
+            return "Empty floor";
         }
 
-        public void SetOtherInventoryMode()
-        {
-            if (isHelpMode)
-            {
-                player.LogMessage = "Close help first";
-                return;
-            }
-
-            isInventoryMode = !isInventoryMode;
-            if (isInventoryMode)
-            {
-                invCursor = 0;
-                player.LogMessage = "Inventory opened";
-            }
-            else
-            {
-                player.LogMessage = "Inventory closed";
-            }
-        }
-        public void MoveInventoryCursorUp() => invCursor--;
-        public void MoveInventoryCursorDown() => invCursor++;
-        
-        public void Quit ()
-        {
-            isRunning = false;
-        }
-    }
+}
 }

@@ -22,7 +22,7 @@ public class Coin : Currency
     public override void ApplyToWallet (Player p)
     {
         p.Coins += 5;
-        p.LogMessage = "Picked up 5 coins";
+        GameLogger.GetInstance().Log("Picked up 5 coins");
     }
 }
 public class Gold : Currency
@@ -33,6 +33,6 @@ public class Gold : Currency
     public override void ApplyToWallet (Player p)
     {
         p.Gold += 1;
-        p.LogMessage = "Picked up a gold bar";
+        GameLogger.GetInstance().Log("Picked up a gold bar");
     }
 }

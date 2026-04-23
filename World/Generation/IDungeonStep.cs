@@ -62,6 +62,11 @@ public class CentralRoom : IDungeonStep
 
 public class RandomRoom : IDungeonStep
 {
+    private int _roomNumber;
+    public RandomRoom(int number)
+    {
+        _roomNumber = number;
+    }
 
     public void Apply (Map map)
     {
@@ -69,13 +74,15 @@ public class RandomRoom : IDungeonStep
         int startX = rand.Next(1,map.Width - 1);
         int startY = rand.Next(1,map.Height - 1);
 
-        int roomWidth = rand.Next(1,3);
-        int roomHeight = rand.Next(1,3);
+        int roomWidth = rand.Next(map.Width/2);
+        int roomHeight = rand.Next(1,map.Height/2);
 
-        for (int x = startX; x < startX + roomWidth; x++)
-            for (int y = startY; y < startY + roomHeight; y++)
-                if (map.IsInsideInnerArea(x,y))
-                    map.SetCell(x,y, new Cell(new Floor()));
+        for(int i =0; i < _roomNumber; i++){
+            for (int x = startX; x < startX + roomWidth; x++)
+                for (int y = startY; y < startY + roomHeight; y++)
+                    if (map.IsInsideInnerArea(x,y))
+                        map.SetCell(x,y, new Cell(new Floor()));
+        }
     }
     public string GetDescription() => "Random room created" ;
 }
@@ -113,31 +120,33 @@ public class RandomCorridor : IDungeonStep
 }
 
 public class ItemsGenerator : IDungeonStep {
-    int itemsCount;
-    public ItemsGenerator(int itemsCount)
+    private IEnumerable<Func<Item>> FuncPossibleItems;
+    private int itemsCount;
+    
+    public ItemsGenerator(IEnumerable<Func<Item>> FuncItems, int count)
     {
-        this.itemsCount = itemsCount;
+        this.FuncPossibleItems = FuncItems;
+        this.itemsCount = count;
     }
-    Item[] possibleItems =
-    {
-        new Bone(),
-        new Mug(),
-        new Rope()
-    };
 
     public void Apply(Map map)
     {
-        Random rand =Rng.Instance;
+        Random rand = Rng.Instance;
         int placed = 0;
         int attempts = 0;
-        while (placed < itemsCount && attempts < 1000){
+
+        List<Func<Item>> listOfFunc  =  FuncPossibleItems.ToList();
+
+        while (placed < itemsCount && attempts < 1000)
+        {
             int startX = rand.Next(1,map.Width - 1);
             int startY = rand.Next(1,map.Height - 1);
             Cell cell = map.GetCell(startX,startY);
 
             if(map.IsInsideInnerArea(startX,startY) && cell.Terrain.IsPassable())
             {
-                Item item = possibleItems[rand.Next(possibleItems.Length)];
+                Func<Item> CreateItem = listOfFunc[rand.Next(listOfFunc.Count)];
+                Item item = CreateItem();
                 cell.Items.Add(item);
                 placed ++;
             }
@@ -146,107 +155,67 @@ public class ItemsGenerator : IDungeonStep {
     }   
     public string GetDescription() => $"{itemsCount} random items created" ;
 }
-public class WeaponsGenerator : IDungeonStep {
-    int weaponsCount;
-    public WeaponsGenerator(int weaponsCount)
-    {
-        this.weaponsCount = weaponsCount;
-    }
-    Func<Weapon>[] weaponFactories = { () => new Axe(), () => new MagicStaff(), () => new Sword() };
-
-    public void Apply(Map map)
-    {
-        Random rand = Rng.Instance;
-
-        int placed = 0, attempts = 0;
-        while (placed < weaponsCount && attempts < 1000){
-            int startX = rand.Next(1,map.Width - 1);
-            int startY = rand.Next(1,map.Height - 1);
-            Cell cell = map.GetCell(startX,startY);
-
-            attempts++;
-            if(cell.Terrain.IsPassable())
-            {
-                Item item = weaponFactories[rand.Next(weaponFactories.Length)](); 
-                int effectsLimit =3;
-                for (int i = 0; i < effectsLimit; i++) {
-                    if (rand.Next(100) < 50) {
-                        item = ModifierApplier.ApplyRandom(item);
-                    }
-                }
-                cell.Items.Add(item);
-                placed ++;
-            }
-        }
-        
-    }
-    public string GetDescription() => $"{weaponsCount} random weapons created" ;
-}
-public class CurrencyGenerator : IDungeonStep {
-    int coinCount;
-    public CurrencyGenerator(int coinCount)
-    {
-        this.coinCount = coinCount;
-    }
-    Currency[] possibleCurrency =
-    {
-        new Coin(),
-        new Gold()
-    };
-
-    public void Apply(Map map)
-    {
-        Random rand =Rng.Instance;
-        int placed = 0, attempts = 0;
-        while (placed < coinCount && attempts < 1000){
-            int startX = rand.Next(1,map.Width - 1);
-            int startY = rand.Next(1,map.Height - 1);
-            Cell cell = map.GetCell(startX,startY);
-            attempts ++;
-            if(cell.Terrain.IsPassable())
-            {
-                Item item = possibleCurrency[rand.Next(possibleCurrency.Length)];
-                cell.Items.Add(item);
-                placed ++;
-            }
-        }   
-    }
-    public string GetDescription() => $"{coinCount} random currency created" ;
-}
 
 public class EnemyGenerator : IDungeonStep {
-    int enemyCount;
-    public EnemyGenerator(int enemyCount)
+    private int _enemyCount;
+    private IEnumerable<Func<int,int,Enemy>> _EnumFunc;
+    public EnemyGenerator(IEnumerable<Func<int,int,Enemy>> enumFunc, int enemyCount)
     {
-        this.enemyCount = enemyCount;
+        this._EnumFunc = enumFunc;
+        this._enemyCount = enemyCount;
     }
-    private Func<Enemy>[] _enemies =
-    {
-        () => new Enemy("Goblin",'g',30,12,2),
-        () => new Enemy("Skeleton",'s',45,15,3),
-        () => new Enemy("Zombi",'z',60,16,6)
-    };
-
     public void Apply(Map map)
     {
         Random rand =Rng.Instance;
         int placed = 0, attempts = 0;
-        while (placed < enemyCount && attempts < 1000){
+        var func = _EnumFunc.ToList(); 
+        while (placed < _enemyCount && attempts < 1000){
             int startX = rand.Next(1,map.Width - 1);
             int startY = rand.Next(1,map.Height - 1);
             Cell cell = map.GetCell(startX,startY);
             attempts ++;
             if(cell.Terrain.IsPassable())
             {
-                Enemy enemy = _enemies[rand.Next(_enemies.Length)]();
+                var enemy = func[rand.Next(func.Count)](startX,startY);
                 cell.Enemy = enemy;
                 placed ++;
             }
         }   
     }
-    public string GetDescription() => $"{enemyCount} random enemies created" ;
-}
 
+    public string GetDescription() => $"{_enemyCount} random enemies created" ;
+}
+public class ArtifactGenerator : IDungeonStep
+{
+    private readonly Item _artifact;
+
+    public ArtifactGenerator(Item artifact)
+    {
+        _artifact = artifact;
+    }
+
+    public void Apply(Map map)
+    {
+        Random rand = Rng.Instance;
+        int attempts = 0;
+        
+        while (attempts < 1000)
+        {
+            int startX = rand.Next(1, map.Width - 1);
+            int startY = rand.Next(1, map.Height - 1);
+            Cell cell = map.GetCell(startX, startY);
+            
+            if (map.IsInsideInnerArea(startX, startY) && cell.Terrain.IsPassable())
+            {
+                cell.Items.Add(_artifact);
+                break; 
+            }
+            attempts++;
+        }
+    }
+
+    public string GetDescription() => $"Artifact '{_artifact.Name}' placed.";
+}
 public class StartingExit : IDungeonStep
 {
     public void Apply(Map map)

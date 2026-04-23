@@ -3,33 +3,22 @@ namespace ConsoleRPG.World;
 public class DungeonBuilder : IDungeonBuilder
 {
     List<IDungeonStep> steps;
-    private int width = 40;
-    private int height = 20;
-
-    public IDungeonBuilder SetSize(int width, int height)
-    {
-        this.width = width;
-        this.height = height;
-        return this;
-    }
     public DungeonBuilder()
     {
         steps = new List<IDungeonStep>();
     }
-    public IDungeonBuilder AddStep(IDungeonStep step)
+    public Map Build(IDungeonThemeFactory themeFactory)
     {
-        steps.Add(step);
-        return this;
-    }
-    public Map Build()
-    {
-        if (steps.Count == 0)
+        var steps = themeFactory.CreateGenerationStrategy();
+        if (steps.Count() == 0)
         throw new InvalidOperationException("Dungeon must have at least one step.");
 
-        if (!(steps[0] is EmptyDungeon || steps[0] is FilledDungeon))
+        if (!(steps.First() is EmptyDungeon || steps.First() is FilledDungeon))
         throw new InvalidOperationException("First step must be EmptyDungeon or FilledDungeon.");
-
+        
+        (int width, int height) = themeFactory.GetSize();
         var map = new Map(width, height);
+        
         foreach (var step in steps)
         {
             step.Apply(map);

@@ -1,10 +1,10 @@
 using System;
 using ConsoleRPG.Entities;
+using ConsoleRPG.Config;
 using ConsoleRPG.World;
 
 namespace ConsoleRPG.Engine
 {
-    // Client
     public class GameEngine 
     {
         public Map map {get; private set;}
@@ -15,12 +15,16 @@ namespace ConsoleRPG.Engine
 
         private bool _isRunning = true;
 
-        public GameEngine()
+        public GameEngine(GameConfig config)
         {
             IDungeonBuilder debugBuilder = new LoggingDungeonBuilder();
             var director = new DungeonDirector(debugBuilder);
 
-            map = director.CreateStandardDungeon();
+            GameLogger.GetInstance(config.PlayerName, config.FileName);
+            IDungeonThemeFactory currentTheme = ThemeSelector.SelectTheme(config.Theme);
+            GameLogger.GetInstance().Log(currentTheme.GetGreetingMessage());
+
+            map = director.CreateThemeMap(currentTheme);
             player = new Player(0,0);
             _currentState = new MapState();
             _renderer = new Renderer(map, player);
@@ -34,6 +38,10 @@ namespace ConsoleRPG.Engine
             if (action != null && action.IsExecutable(this))
             {
                 action.Execute(this);
+            }
+            else
+            {
+                GameLogger.GetInstance().Log($"Wciśnięto nieznany lub zablokowany klawisz: {key}");
             }
         }
         public void Run()

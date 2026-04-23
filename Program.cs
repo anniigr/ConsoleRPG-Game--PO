@@ -1,5 +1,6 @@
 ﻿using System;
 using ConsoleRPG.Engine;
+using ConsoleRPG.Config;
 
 namespace ConsoleRPG
 {
@@ -12,8 +13,21 @@ namespace ConsoleRPG
             Console.Title = "OOP Console RPG - Stage 2";
             
             ShowIntro();
-            GameEngine engine = new GameEngine();
+            GameConfig config = ConfigManager.LoadConfig();
+            GameEngine engine = new GameEngine(config);
+            
             engine.Run();
+            if (engine.player.IsDead)
+            {
+                Console.Clear();
+                Console.WriteLine("==============================================");
+                Console.WriteLine("                  GAME OVER                   ");
+                Console.WriteLine("==============================================");
+                Console.WriteLine("\nTwoja postać poległa w walce.");
+                Console.WriteLine($"\nZapisano dziennik zdarzeń w pliku:\n{GameLogger.GetInstance().GetLogFilePath()}");
+                Console.WriteLine("\nNaciśnij dowolny klawisz, aby wyjść...");
+                Console.ReadKey(true);
+            }
         }
     
 

@@ -18,10 +18,25 @@ public class LoggingDungeonBuilder : IDungeonBuilder
         return this;
     }
 
-    public Map Build() {
-        var map = new Map(_w, _h);
-        foreach (var step in _steps) step.Apply(map);
+    public Map Build(IDungeonThemeFactory themeFactory) {
+        var steps = themeFactory.CreateGenerationStrategy();
+        if (steps.Count() == 0)
+        throw new InvalidOperationException("Dungeon must have at least one step.");
+
+        if (!(steps.First() is EmptyDungeon || steps.First() is FilledDungeon))
+        throw new InvalidOperationException("First step must be EmptyDungeon or FilledDungeon.");
+        
+        (int width, int height) = themeFactory.GetSize();
+        var map = new Map(width, height);
+        
+        foreach (var step in steps)
+        {
+            this.AddStep(step);
+            step.Apply(map);
+        }
+
         Console.WriteLine("[LOG] Map builded.");
         return map;
+
     }
 }

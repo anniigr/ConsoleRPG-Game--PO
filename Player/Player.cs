@@ -6,14 +6,11 @@ using ConsoleRPG.Combat;
 namespace ConsoleRPG.Entities;
 
 // Reciever
-public class Player
+public class Player : Entity
 {
-    public int X {get; private set;}
-    public int Y {get; private set;}
-
+    
     public int Strength { get; set; } = 10;
-    public int Dexterity { get; set; } = 10;
-    public int Health { get; set; } = 100;        
+    public int Dexterity { get; set; } = 10; 
     public int Luck { get; set; } = 5;
     public int Aggression { get; set; } = 5;
     public int Wisdom { get; set; } = 5;
@@ -26,13 +23,10 @@ public class Player
 
     public List<Item> Inventory {get;set;} = new List<Item>();
 
-    public string LogMessage {get; set; } = "The game is started";
 
-    public Player(int startX, int startY)
-    {
-        X = startX; 
-        Y = startY;
-    }
+    public Player(int startX, int startY) 
+    : base ("Hero", '¶', startX, startY, 100){}
+
 
     public void UnequipLeft()
     {
@@ -68,15 +62,15 @@ public class Player
         {
             X = newX;
             Y = newY;
-            LogMessage = "The player is moved";
+            GameLogger.GetInstance().Log("The player is moved");
         }
         else
         {
-            LogMessage = "The wall is blocking way!";
+             GameLogger.GetInstance().Log("The wall is blocking way!");
         }
         if (Health <= 0)
         {
-            LogMessage = "GAME OVER. You died in the dungeon.";
+             GameLogger.GetInstance().Log("GAME OVER. You died in the dungeon.");
         }
     }
     public void AttackEnemy(Enemy enemy, IAttackVisitor attackType)
@@ -98,7 +92,8 @@ public class Player
         int damageFromEnemy = Math.Max(0, enemy.AttackValue - totalDefense);
         Health -= damageFromEnemy;
 
-        LogMessage = $"You used {attackType.GetType().Name}. Out: {totalDamage} dmg, Defended: {totalDefense}. Taken: {damageFromEnemy} dmg.";
+        GameLogger.GetInstance().Log($"You used {attackType.GetType().Name} on {enemy.Name}. Out: {totalDamage} dmg, Defended: {totalDefense}. Taken: {damageFromEnemy} dmg.");
+        if (enemy.Health <= 0)  GameLogger.GetInstance().Log($"{enemy.Name} is killed.");
     }
     public void PickUp(Map map)
     {
@@ -110,7 +105,7 @@ public class Player
         }
         else
         {
-            LogMessage = "Nothing to pick up";
+            GameLogger.GetInstance().Log("Nothing to pick up");
         }
     }
 

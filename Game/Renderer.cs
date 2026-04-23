@@ -40,15 +40,16 @@ namespace ConsoleRPG.Engine
             
             Console.Write(screen.ToString());
         }
-        public void DrawLog(string message)
+        public void DrawLog()
         {
-            Console.SetCursorPosition(0, 24);
+            int logLine = map.Height + 1; 
             
-            Console.Write(new string(' ', Console.WindowWidth));
+            Console.SetCursorPosition(0, logLine);
+            Console.Write(new string(' ', Console.WindowWidth)); 
             
-            Console.SetCursorPosition(0, 24);
+            Console.SetCursorPosition(0, logLine);
             Console.ForegroundColor = ConsoleColor.Gray;
-            Console.WriteLine($"> {message}");
+            Console.WriteLine($"> {GameLogger.GetInstance().GetLastLog()}");
             Console.ResetColor();
         }
 

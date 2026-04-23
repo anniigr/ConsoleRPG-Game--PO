@@ -6,8 +6,11 @@ namespace ConsoleRPG.Items;
 
 public abstract class Item
 {
-    public abstract char Symbol {get;}
-    public abstract string Name {get;}
+    protected char _symbol;
+    protected string _name;
+
+    public virtual char Symbol => _symbol;
+    public virtual string Name => _name;
 
     public virtual int GetDamage() {return 0;}
     public virtual void EquipLeft(Player p)=> EquipLeft(p, this);
@@ -19,7 +22,7 @@ public abstract class Item
         p.UnequipLeft(); 
         p.LeftHand = self;
         p.Inventory.Remove(self);
-        p.LogMessage = $"{Name} is in left hand.";
+        GameLogger.GetInstance().Log($"{Name} is in left hand.");
     }
 
     public virtual void EquipRight(Player p, Item self)
@@ -27,7 +30,7 @@ public abstract class Item
         p.UnequipRight(); 
         p.RightHand = self;
         p.Inventory.Remove(self);
-        p.LogMessage = $"{Name} is in right hand.";
+        GameLogger.GetInstance().Log($"{Name} is in right hand.");
     }
 
     public virtual void UnEquip(Player p, Item self)
@@ -38,7 +41,7 @@ public abstract class Item
         if (!p.Inventory.Contains(self))
             p.Inventory.Add(self);
             
-        p.LogMessage = $"Unequipped {Name}.";
+       GameLogger.GetInstance().Log($"Unequipped {Name}.");
     }
 
     public virtual void Accept(IAttackVisitor visitor) => visitor.Visit(this);
@@ -49,7 +52,7 @@ public abstract class Item
             p.Inventory.Remove(this);
             cell.Items.Add(this);
             
-            p.LogMessage = $"Thrown: {this.Name}.";
+            GameLogger.GetInstance().Log($"Thrown: {this.Name}.");
         }
     }
 
@@ -57,7 +60,7 @@ public abstract class Item
     {
         p.Inventory.Add(this);
         cell.Items.Remove(this);
-        p.LogMessage = $"Picked up: {Name}.";
+        GameLogger.GetInstance().Log($"Picked up: {Name}.");
     }
 
 }

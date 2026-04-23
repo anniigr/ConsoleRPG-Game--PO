@@ -15,21 +15,21 @@ public abstract class OneHandedWeapon : Weapon
         p.UnequipLeft();
         p.LeftHand = item;
         p.Inventory.Remove(item);
-        p.LogMessage = $"{item.Name} is in left hand";
+        GameLogger.GetInstance().Log($"{item.Name} is in left hand");
     }
     public override void EquipRight(Player p, Item item)
     {
         p.UnequipRight();
         p.RightHand = item;
         p.Inventory.Remove(item);
-        p.LogMessage = $"{item.Name} is in right hand";
+       GameLogger.GetInstance().Log($"{item.Name} is in right hand");
     }
     public override void UnEquip(Player p, Item item)
     {
        if (p.LeftHand == item) p.LeftHand = null;
        if (p.RightHand == item) p.RightHand = null;
        p.Inventory.Add(item);
-       p.LogMessage = $"Unequiped {item.Name}";
+       GameLogger.GetInstance().Log($"Unequiped {item.Name}");
     }
 
 }
@@ -43,7 +43,7 @@ public abstract class TwoHandedWeapon : Weapon
         p.LeftHand = item;
         p.RightHand = item;
         p.Inventory.Remove(item);
-        p.LogMessage = $"{Name} is in 2 hands now";
+       GameLogger.GetInstance().Log($"{Name} is in 2 hands now");
     }
     public override void EquipLeft(Player p, Item item) => EquipBoth(p,item);
     public override void EquipRight(Player p, Item item) => EquipBoth(p, item);
@@ -52,7 +52,7 @@ public abstract class TwoHandedWeapon : Weapon
         p.LeftHand = null;
         p.RightHand = null;
         p.Inventory.Add(item);
-        p.LogMessage = $"Unequiped {item.Name}.";
+        GameLogger.GetInstance().Log($"Unequiped {item.Name}.");
     }
    
 } 

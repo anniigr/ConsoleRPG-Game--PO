@@ -29,16 +29,25 @@ public class MapState : IGameState
         _actions.AddAction(new SpecialAttackAction("Normal Attack", ConsoleKey.D1, p => new NormalAttack(p)));
         _actions.AddAction(new SpecialAttackAction("Stealth Attack", ConsoleKey.D2, p => new StealthAttack(p)));
         _actions.AddAction(new SpecialAttackAction("Magic Attack", ConsoleKey.D3, p => new MagicAttack(p)));
+        _actions.AddAction(new ChangeStateAction("Dziennik Zdarzeń", ConsoleKey.J, () => new LogHistoryState(this)));
     }
     public void Update(GameEngine engine, ConsoleKey key)
     {
-        _actions.FindAction(key)?.Execute(engine);
+        var action = _actions.FindAction(key);
+        if (action != null)
+        {
+            action.Execute(engine);
+        }
+        else
+        {
+            engine.ExcecuteAction(key); 
+        }
     }
 
     public void Draw(Renderer renderer, GameEngine engine)
     {
         renderer.DrawFrame(engine,this);
-        renderer.DrawLog(engine.player.LogMessage);
+        renderer.DrawLog();
     }
     public string GetPanelLine(int lineIndex, GameEngine engine)
     {
@@ -96,7 +105,7 @@ public class InventoryState : IGameState
     public void Draw(Renderer renderer, GameEngine engine)
     {
         renderer.DrawFrame(engine,this);
-        renderer.DrawLog(engine.player.LogMessage);
+        renderer.DrawLog();
     }
     public string GetPanelLine(int lineIndex, GameEngine engine)
     {
@@ -132,7 +141,7 @@ public class HelpState : IGameState
     public void Draw(Renderer renderer, GameEngine engine)
     {
         renderer.DrawFrame(engine, this);
-        renderer.DrawLog(engine.player.LogMessage);
+        renderer.DrawLog();
     }
     public ActionManager GetActionManager() => _previousState.GetActionManager();
     public string GetPanelLine(int lineIndex, GameEngine engine)
@@ -144,4 +153,32 @@ public class HelpState : IGameState
             return $"[{actions[actionIdx].Key}] {actions[actionIdx].Name}";
         return "";
     }
+}
+public class LogHistoryState : IGameState
+{
+    private readonly IGameState _previousState;
+
+    public LogHistoryState(IGameState previousState) => _previousState = previousState;
+
+    public void Update(GameEngine engine, ConsoleKey key)
+    {
+        if (key == ConsoleKey.J || key == ConsoleKey.Escape)
+            engine.ChangeState(_previousState);
+    }
+
+    public void Draw(Renderer renderer, GameEngine engine)
+    {
+        Console.Clear();
+        Console.WriteLine("=== HISTORIA ZDARZEŃ (Wciśnij J aby wrócić) ===");
+        var logs = GameLogger.GetInstance().GetAllLogs();
+        
+        int start = Math.Max(0, logs.Count - 20);
+        for (int i = start; i < logs.Count; i++)
+        {
+            Console.WriteLine(logs[i]);
+        }
+    }
+
+    public ActionManager GetActionManager() => _previousState.GetActionManager();
+    public string GetPanelLine(int lineIndex, GameEngine engine) => "";
 }

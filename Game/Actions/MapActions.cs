@@ -22,7 +22,7 @@ namespace ConsoleRPG.Engine
             engine.player.Move(DX, DY, engine.map);
             if (engine.player.Health <= 0)
             {
-                engine.player.LogMessage = "YOU ARE DEAD";
+                GameLogger.GetInstance().Log("YOU ARE DEAD");
                 engine.Quit(); 
             }
         }

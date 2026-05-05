@@ -1,6 +1,7 @@
 ﻿using System;
 using ConsoleRPG.Engine;
 using ConsoleRPG.Config;
+using ConsoleRPG.Log;
 
 namespace ConsoleRPG
 {

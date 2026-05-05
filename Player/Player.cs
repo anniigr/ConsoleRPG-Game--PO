@@ -3,6 +3,8 @@ using ConsoleRPG.Engine;
 using ConsoleRPG.Items;
 using ConsoleRPG.World;
 using ConsoleRPG.Combat;
+using ConsoleRPG.Log;
+using ConsoleRPG.Entities.Observers;
 namespace ConsoleRPG.Entities;
 
 // Reciever
@@ -22,6 +24,7 @@ public class Player : Entity
     public Item? RightHand {get;set;} = null;
 
     public List<Item> Inventory {get;set;} = new List<Item>();
+    public EventManagerSound enemiesSoundManager;
 
 
     public Player(int startX, int startY) 
@@ -101,7 +104,7 @@ public class Player : Entity
         if (current.Items.Count > 0)
         {
             Item item = current.Items[current.Items.Count - 1];
-            item.PickUp(this, current); 
+            item.PickUp(this, map); 
         }
         else
         {

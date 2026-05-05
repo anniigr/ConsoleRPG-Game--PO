@@ -2,6 +2,8 @@ using System;
 using ConsoleRPG.Entities;
 using ConsoleRPG.Config;
 using ConsoleRPG.World;
+using ConsoleRPG.Log;
+using ConsoleRPG.Systems;
 
 namespace ConsoleRPG.Engine
 {
@@ -12,6 +14,7 @@ namespace ConsoleRPG.Engine
         private Renderer _renderer;
         private ActionManager _actionManager;
         private IGameState _currentState;
+        private EnemySystem _enemySystem;
 
         private bool _isRunning = true;
 
@@ -29,6 +32,7 @@ namespace ConsoleRPG.Engine
             _currentState = new MapState();
             _renderer = new Renderer(map, player);
             _actionManager = new ActionManager();
+            _enemySystem = new EnemySystem();
         }
         public void ChangeState (IGameState newGameState) => _currentState = newGameState;
         public void Quit () =>_isRunning = false;
@@ -43,6 +47,10 @@ namespace ConsoleRPG.Engine
             {
                 GameLogger.GetInstance().Log($"Wciśnięto nieznany lub zablokowany klawisz: {key}");
             }
+        }
+        public void ProcessEnemyTurn()
+        {
+            _enemySystem.ProcessTurn(this.map);
         }
         public void Run()
         {

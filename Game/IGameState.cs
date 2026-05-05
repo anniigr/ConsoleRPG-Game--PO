@@ -1,5 +1,5 @@
 using ConsoleRPG.Combat;
-
+using ConsoleRPG.Log;
 namespace ConsoleRPG.Engine;
 public interface IGameState
 {
@@ -37,6 +37,7 @@ public class MapState : IGameState
         if (action != null)
         {
             action.Execute(engine);
+            engine.ProcessEnemyTurn();
         }
         else
         {

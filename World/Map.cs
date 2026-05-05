@@ -1,4 +1,5 @@
 using ConsoleRPG.Items;
+using ConsoleRPG.Entities.Observers;
 namespace ConsoleRPG.World;
 
 public class Map
@@ -6,6 +7,7 @@ public class Map
     public int Width;
     public int Height;
     private Cell[,] grid;
+    public EventManagerSound soundManager = new EventManagerSound();
 
     public Map(int width = 40, int height = 20)
     {

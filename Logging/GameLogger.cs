@@ -1,3 +1,4 @@
+namespace ConsoleRPG.Log;
 public class GameLogger
 {
     private static ILogger _instance;

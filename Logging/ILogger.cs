@@ -1,3 +1,4 @@
+namespace ConsoleRPG.Log;
 public interface ILogger
 {
     void Log(string message);

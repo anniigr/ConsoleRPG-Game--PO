@@ -1,5 +1,6 @@
 using ConsoleRPG.World;
 using ConsoleRPG.Entities;
+using ConsoleRPG.Log;
 using ConsoleRPG.Combat;
 using System.Security.Cryptography.X509Certificates;
 namespace ConsoleRPG.Items;
@@ -56,9 +57,10 @@ public abstract class Item
         }
     }
 
-    public virtual void PickUp(Player p, Cell cell)
+    public virtual void PickUp(Player p, Map map)
     {
         p.Inventory.Add(this);
+        Cell cell = map.GetCell(p.X,p.Y);
         cell.Items.Remove(this);
         GameLogger.GetInstance().Log($"Picked up: {Name}.");
     }

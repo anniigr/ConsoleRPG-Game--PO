@@ -156,34 +156,72 @@ public class ItemsGenerator : IDungeonStep {
     public string GetDescription() => $"{itemsCount} random items created" ;
 }
 
-public class EnemyGenerator : IDungeonStep {
+public class EnemyGenerator : IDungeonStep 
+{
     private int _enemyCount;
-    private IEnumerable<Func<int,int,Enemy>> _EnumFunc;
-    public EnemyGenerator(IEnumerable<Func<int,int,Enemy>> enumFunc, int enemyCount)
+    private IEnumerable<SpeciesSpawnDefinition> _speciesDefinitions;
+
+    public EnemyGenerator(IEnumerable<SpeciesSpawnDefinition> definitions, int enemyCount)
     {
-        this._EnumFunc = enumFunc;
-        this._enemyCount = enemyCount;
-    }
-    public void Apply(Map map)
-    {
-        Random rand =Rng.Instance;
-        int placed = 0, attempts = 0;
-        var func = _EnumFunc.ToList(); 
-        while (placed < _enemyCount && attempts < 1000){
-            int startX = rand.Next(1,map.Width - 1);
-            int startY = rand.Next(1,map.Height - 1);
-            Cell cell = map.GetCell(startX,startY);
-            attempts ++;
-            if(cell.Terrain.IsPassable())
-            {
-                var enemy = func[rand.Next(func.Count)](startX,startY);
-                cell.Enemy = enemy;
-                placed ++;
-            }
-        }   
+        _speciesDefinitions = definitions;
+        _enemyCount = enemyCount;
     }
 
-    public string GetDescription() => $"{_enemyCount} random enemies created" ;
+    public void Apply(Map map)
+    {
+        Random rand = Rng.Instance;
+        var definitionsList = _speciesDefinitions.ToList();
+        int totalPlaced = 0; 
+
+        foreach (var def in definitionsList)
+        {
+            int spawnedForThisSpecies = 0;
+            int attempts = 0;
+            
+            while (spawnedForThisSpecies < def.MinCount && attempts < 1000)
+            {
+                if (TrySpawnEnemy(map, def.Factory))
+                {
+                    spawnedForThisSpecies++;
+                    totalPlaced++; 
+                }
+                attempts++;
+            }
+        }
+
+        int fillAttempts = 0;
+        while (totalPlaced < _enemyCount && fillAttempts < 2000)
+        {
+            var randomDef = definitionsList[rand.Next(definitionsList.Count)];
+            
+            if (TrySpawnEnemy(map, randomDef.Factory))
+            {
+                totalPlaced++;
+            }
+            fillAttempts++;
+        }
+    }
+
+    private bool TrySpawnEnemy(Map map, Func<int, int, Enemy> factory)
+    {
+        Random rand = Rng.Instance;
+        int x = rand.Next(1, map.Width - 1);
+        int y = rand.Next(1, map.Height - 1);
+        Cell cell = map.GetCell(x, y);
+
+        if (cell.Terrain.IsPassable() && cell.Enemy == null)
+        {
+            var enemy = factory(x, y);
+            cell.Enemy = enemy;
+            enemy.MoveRandomly(map);
+            enemy.enemiesManagerSound = map.soundManager;
+            map.soundManager.Subscribe(enemy);
+            return true;
+        }
+        return false;
+    }
+
+    public string GetDescription() => $"Enemies created with guaranteed species counts.";
 }
 public class ArtifactGenerator : IDungeonStep
 {
@@ -230,4 +268,16 @@ public class StartingExit : IDungeonStep
         }
     }
     public string GetDescription() => $"Start door created" ;
+}
+
+public class SpeciesSpawnDefinition
+{
+    public Func<int, int, Enemy> Factory { get; }
+    public int MinCount { get; }
+
+    public SpeciesSpawnDefinition(Func<int, int, Enemy> factory, int minCount)
+    {
+        Factory = factory;
+        MinCount = minCount;
+    }
 }

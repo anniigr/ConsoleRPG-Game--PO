@@ -13,5 +13,5 @@ public interface IDungeonThemeFactory
     IEnumerable<IDungeonStep> CreateGenerationStrategy();
     IEnumerable<Func<Item>> CreateItemPool();
     Item CreateArtifact();
-    IEnumerable<Func<int, int, Enemy>> CreateEnemyPool();
+    public IEnumerable<SpeciesSpawnDefinition> CreateEnemyPool();
 }

@@ -2,6 +2,7 @@ using System;
 using ConsoleRPG.Engine;
 using ConsoleRPG.Combat;
 using ConsoleRPG.Entities;
+using ConsoleRPG.Log;
 namespace ConsoleRPG.Engine
 {
     public abstract class MoveAction : IAction

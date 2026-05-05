@@ -3,6 +3,7 @@ using ConsoleRPG.Entities;
 using ConsoleRPG.Items;
 using System.Collections.Generic;
 using System;
+using ConsoleRPG.Entities.Observers;
 
 namespace ConsoleRPG.World;
 
@@ -19,10 +20,24 @@ public class SciFiThemeFactory : IDungeonThemeFactory
         yield return () => new Rope();
     }
 
-    public IEnumerable<Func<int, int, Enemy>> CreateEnemyPool()
+    public IEnumerable<SpeciesSpawnDefinition> CreateEnemyPool()
     {
-        yield return (x, y) => new Enemy("Cleaner Robot", 'R', x, y, 60, 20, 5);
-        yield return (x, y) => new Enemy("Security Drone", 'D', x, y, 45, 25, 3);
+        EventManagerDeath groupZombies = new EventManagerDeath("Zombi");
+        EventManagerDeath groupSkeleton = new EventManagerDeath("Skeleton");
+
+        yield return new SpeciesSpawnDefinition((x, y) => { 
+            var zombie = new Zombie(x, y);
+            zombie.group = groupZombies;
+            groupZombies.Subscribe(zombie);
+            return zombie;
+        }, 3); 
+
+        yield return new SpeciesSpawnDefinition((x, y) => { 
+            var skeleton = new Skeleton(x, y);
+            skeleton.group = groupSkeleton;
+            groupSkeleton.Subscribe(skeleton);
+            return skeleton;
+        }, 3);
     }
 
     public IEnumerable<IDungeonStep> CreateGenerationStrategy()

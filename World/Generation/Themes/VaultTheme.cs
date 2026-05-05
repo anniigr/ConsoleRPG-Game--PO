@@ -1,5 +1,6 @@
 // ===== ./World/Generation/Themes/VaultThemeFactory.cs =====
 using ConsoleRPG.Entities;
+using ConsoleRPG.Entities.Observers;
 using ConsoleRPG.Items;
 using System.Collections.Generic;
 using System;
@@ -20,10 +21,24 @@ public class VaultThemeFactory : IDungeonThemeFactory
         yield return () => new Sword();
     }
 
-    public IEnumerable<Func<int, int, Enemy>> CreateEnemyPool()
+    public IEnumerable<SpeciesSpawnDefinition> CreateEnemyPool()
     {
-        yield return (x, y) => new Enemy("Mimic Safe", 'S', x, y, 80, 15, 10);
-        yield return (x, y) => new Enemy("Aggressive Briefcase", 'B', x, y, 30, 10, 0);
+        EventManagerDeath groupZombies = new EventManagerDeath("Zombi");
+        EventManagerDeath groupSkeleton = new EventManagerDeath("Skeleton");
+
+        yield return new SpeciesSpawnDefinition((x, y) => { 
+            var zombie = new Zombie(x, y);
+            zombie.group = groupZombies;
+            groupZombies.Subscribe(zombie);
+            return zombie;
+        }, 3); 
+
+        yield return new SpeciesSpawnDefinition((x, y) => { 
+            var skeleton = new Skeleton(x, y);
+            skeleton.group = groupSkeleton;
+            groupSkeleton.Subscribe(skeleton);
+            return skeleton;
+        }, 3);
     }
 
     public IEnumerable<IDungeonStep> CreateGenerationStrategy()

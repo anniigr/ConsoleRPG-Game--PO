@@ -1,16 +1,16 @@
 using ConsoleRPG.Entities;
 using ConsoleRPG.World;
-
+using ConsoleRPG.Log;
 namespace ConsoleRPG.Items;
 
 
 public abstract class Currency : Item
 {
     public abstract void ApplyToWallet(Player p);
-    public override void PickUp(Player p, Cell cell)
+    public override void PickUp(Player p, Map map)
     {
         ApplyToWallet(p);
-        cell.Items.Remove(this);
+        map.GetCell(p.X,p.Y).Items.Remove(this);
     }
 }
 

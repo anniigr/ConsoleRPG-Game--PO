@@ -3,6 +3,7 @@ using System.Text;
 using System.Linq;
 using ConsoleRPG.Entities;
 using ConsoleRPG.World;
+using ConsoleRPG.Log;
 
 namespace ConsoleRPG.Engine
 {

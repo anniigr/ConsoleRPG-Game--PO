@@ -1,3 +1,4 @@
+namespace ConsoleRPG.Log;
 public class FileAndMemoryLogger : ILogger
 {
     private readonly List<string> _logs = new List<string>();

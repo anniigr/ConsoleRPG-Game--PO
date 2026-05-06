@@ -7,7 +7,16 @@ namespace ConsoleRPG.Items;
 public abstract class Weapon : Item
 {
     public int damage;
+    protected abstract int _soundRange { get; }
     public override int GetDamage() => damage;
+    public override void PickUp(Player p, Map map)
+    {
+        p.Inventory.Add(this);
+        map.soundManager.Notify(p.X,p.Y,_soundRange,map);
+        Cell cell = map.GetCell(p.X,p.Y);
+        cell.Items.Remove(this);
+        GameLogger.GetInstance().Log($"Picked up: {Name}.");
+    }
 }
 
 public abstract class OneHandedWeapon : Weapon
@@ -60,21 +69,13 @@ public abstract class TwoHandedWeapon : Weapon
 } 
 public abstract class HeavyWeapon : TwoHandedWeapon 
 {
-    private int _soundRange = 10;
+    protected override int _soundRange => 10;
     public override void Accept(IAttackVisitor visitor) => visitor.Visit(this);
-    public override void PickUp(Player p, Map map)
-    {
-        p.Inventory.Add(this);
-        map.soundManager.Notify(p.X,p.Y,_soundRange,map);
-        Cell cell = map.GetCell(p.X,p.Y);
-        cell.Items.Remove(this);
-        GameLogger.GetInstance().Log($"Picked up: {Name}.");
-    }
 }
 
 public abstract class LightWeapon : OneHandedWeapon
 {
-    private int _soundRange = 1;
+    protected override int _soundRange => 3;
     public override void Accept(IAttackVisitor visitor) => visitor.Visit(this);
     public override void PickUp(Player p, Map map)
     {
@@ -88,7 +89,7 @@ public abstract class LightWeapon : OneHandedWeapon
 
 public abstract class MagicWeapon : OneHandedWeapon 
 {
-    private int _soundRange = 5;
+    protected override int _soundRange => 5;
     public override void Accept(IAttackVisitor visitor) => visitor.Visit(this);
     public override void PickUp(Player p, Map map)
     {

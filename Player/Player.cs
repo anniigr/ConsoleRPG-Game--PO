@@ -24,8 +24,6 @@ public class Player : Entity
     public Item? RightHand {get;set;} = null;
 
     public List<Item> Inventory {get;set;} = new List<Item>();
-    public EventManagerSound enemiesSoundManager;
-
 
     public Player(int startX, int startY) 
     : base ("Hero", '¶', startX, startY, 100){}

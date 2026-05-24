@@ -1,0 +1,378 @@
+[12:41:34] === Rozpoczęto nową grę ===
+[12:41:34] [12:41:27] The player is moved
+[12:41:37] The player is moved
+[12:41:37] [12:41:37] The player is moved
+[12:41:38] The player is moved
+[12:41:38] [12:41:38] The player is moved
+[12:41:40] The player is moved
+[12:41:40] [12:41:40] The player is moved
+[12:41:41] The player is moved
+[12:41:41] [12:41:41] The player is moved
+[12:41:43] [12:41:43] The player is moved
+[12:41:44] [12:41:44] The player is moved
+[12:41:45] [12:41:45] The player is moved
+[12:41:46] [12:41:46] The player is moved
+[12:41:47] [12:41:47] The player is moved
+[12:41:48] [12:41:48] The player is moved
+[12:41:49] [12:41:49] The player is moved
+[12:41:50] [12:41:50] The player is moved
+[12:41:51] [12:41:51] The player is moved
+[12:41:52] [12:41:52] The player is moved
+[12:41:53] [12:41:53] The player is moved
+[12:41:54] [12:41:54] Picked up: Sword.
+[12:41:56] [12:41:56] The player is moved
+[12:41:58] [12:41:58] Sword is in right hand
+[12:42:01] [12:42:01] The player is moved
+[12:42:04] [12:42:04] The player is moved
+[12:42:05] [12:42:05] The player is moved
+[12:42:05] [12:42:05] Skeleton is killed.
+[12:42:07] [12:42:07] The player is moved
+[12:42:23] [12:42:23] The player is moved
+[12:42:24] [12:42:24] The player is moved
+[12:42:26] [12:42:26] The player is moved
+[12:42:27] [12:42:27] The player is moved
+[12:42:28] [12:42:28] The player is moved
+[12:42:29] [12:42:29] The player is moved
+[12:42:29] [12:42:29] Skeleton is killed.
+[12:42:53] [12:42:53] The player is moved
+[12:42:54] [12:42:54] The player is moved
+[12:42:55] [12:42:55] The player is moved
+[12:42:57] [12:42:57] The player is moved
+[12:42:58] [12:42:58] The player is moved
+[12:42:59] [12:42:59] The player is moved
+[12:43:00] [12:43:00] The player is moved
+[12:43:02] [12:43:02] The player is moved
+[12:43:03] [12:43:03] The player is moved
+[12:43:03] [12:43:03] You used StealthAttack on Zombie. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:43:05] [12:43:05] The player is moved
+[12:43:06] [12:43:06] The player is moved
+[12:43:08] [12:43:08] The player is moved
+[12:43:09] [12:43:09] The player is moved
+[12:43:10] [12:43:10] The player is moved
+[12:43:11] [12:43:11] The player is moved
+[12:43:12] [12:43:12] The player is moved
+[12:43:13] [12:43:13] Picked up a gold bar
+[12:43:14] [12:43:14] The player is moved
+[12:43:15] [12:43:15] The player is moved
+[12:43:16] [12:43:16] The player is moved
+[12:43:17] [12:43:17] Picked up a gold bar
+[12:43:17] [12:43:17] The player is moved
+[12:43:18] [12:43:18] The player is moved
+[12:43:18] [12:43:18] Picked up: Sword.
+[12:43:19] [12:43:19] The player is moved
+[12:43:22] [12:43:22] Sword is in right hand
+[12:43:23] [12:43:23] The player is moved
+[12:43:24] [12:43:24] The player is moved
+[12:43:25] [12:43:25] The player is moved
+[12:43:28] The player is moved
+[12:43:28] [12:43:28] The player is moved
+[12:43:28] The player is moved
+[12:43:29] The player is moved
+[12:43:29] [12:43:29] The player is moved
+[12:43:29] The player is moved
+[12:43:29] The player is moved
+[12:43:29] The player is moved
+[12:43:30] The player is moved
+[12:43:30] [12:43:30] The player is moved
+[12:43:30] The player is moved
+[12:43:30] The player is moved
+[12:43:30] The player is moved
+[12:43:30] The player is moved
+[12:43:31] The player is moved
+[12:43:31] [12:43:31] The player is moved
+[12:43:31] The player is moved
+[12:43:31] The player is moved
+[12:43:31] The player is moved
+[12:43:31] The player is moved
+[12:43:32] The player is moved
+[12:43:32] [12:43:32] The player is moved
+[12:43:32] The player is moved
+[12:43:32] The player is moved
+[12:43:32] The player is moved
+[12:43:32] The player is moved
+[12:43:32] The player is moved
+[12:43:32] The player is moved
+[12:43:32] The player is moved
+[12:43:32] The player is moved
+[12:43:32] The player is moved
+[12:43:32] The player is moved
+[12:43:32] The player is moved
+[12:43:33] The player is moved
+[12:43:33] [12:43:33] The player is moved
+[12:43:33] The player is moved
+[12:43:33] The player is moved
+[12:43:33] The player is moved
+[12:43:33] The player is moved
+[12:43:33] The player is moved
+[12:43:35] Picked up: Gold.
+[12:43:35] [12:43:35] Picked up a gold bar
+[12:43:35] The player is moved
+[12:43:35] [12:43:35] The player is moved
+[12:43:36] The player is moved
+[12:43:36] [12:43:36] The player is moved
+[12:43:36] The player is moved
+[12:43:36] The player is moved
+[12:43:37] The player is moved
+[12:43:37] [12:43:37] The player is moved
+[12:43:37] Picked up: Gold.
+[12:43:37] [12:43:37] Picked up a gold bar
+[12:43:39] The player is moved
+[12:43:39] [12:43:39] The player is moved
+[12:43:43] The player is moved
+[12:43:43] [12:43:43] The player is moved
+[12:43:43] The player is moved
+[12:43:56] The player is moved
+[12:43:56] [12:43:56] The player is moved
+[12:43:56] The player is moved
+[12:43:57] The player is moved
+[12:43:57] [12:43:57] The player is moved
+[12:43:57] The player is moved
+[12:43:57] The player is moved
+[12:43:58] The player is moved
+[12:43:58] [12:43:58] The player is moved
+[12:43:58] The player is moved
+[12:43:58] The player is moved
+[12:43:59] The player is moved
+[12:43:59] [12:43:59] The player is moved
+[12:43:59] The player is moved
+[12:44:02] The player is moved
+[12:44:02] [12:44:02] The player is moved
+[12:44:02] The player is moved
+[12:44:03] The player is moved
+[12:44:03] [12:44:03] The player is moved
+[12:44:04] The player is moved
+[12:44:04] [12:44:04] The player is moved
+[12:44:04] The player is moved
+[12:44:04] The player is moved
+[12:44:04] The player is moved
+[12:44:04] The player is moved
+[12:44:04] The player is moved
+[12:44:05] The player is moved
+[12:44:05] [12:44:05] The player is moved
+[12:44:05] The player is moved
+[12:44:06] Picked up: Sword.
+[12:44:06] [12:44:06] Picked up: Sword.
+[12:44:06] The player is moved
+[12:44:06] [12:44:06] The player is moved
+[12:44:06] The player is moved
+[12:44:06] The player is moved
+[12:44:07] The player is moved
+[12:44:07] [12:44:07] The player is moved
+[12:44:07] The player is moved
+[12:44:07] The player is moved
+[12:44:07] The player is moved
+[12:44:08] The player is moved
+[12:44:08] [12:44:08] The player is moved
+[12:44:08] The player is moved
+[12:44:08] The player is moved
+[12:44:08] The player is moved
+[12:44:08] The player is moved
+[12:44:08] The player is moved
+[12:44:09] The player is moved
+[12:44:09] [12:44:09] The player is moved
+[12:44:09] The player is moved
+[12:44:09] The player is moved
+[12:44:09] The player is moved
+[12:44:09] The player is moved
+[12:44:10] The player is moved
+[12:44:10] [12:44:10] The player is moved
+[12:44:10] The player is moved
+[12:44:10] The player is moved
+[12:44:10] The player is moved
+[12:44:11] The player is moved
+[12:44:11] [12:44:11] The player is moved
+[12:44:11] The player is moved
+[12:44:11] The player is moved
+[12:44:11] The player is moved
+[12:44:11] The player is moved
+[12:44:13] Picked up: Szczęśliwa Sakwa Monet.
+[12:44:13] [12:44:13] Picked up: Szczęśliwa Sakwa Monet.
+[12:44:16] Szczęśliwa Sakwa Monet is in right hand.
+[12:44:16] [12:44:16] Szczęśliwa Sakwa Monet is in 2 hands now
+[12:44:19] Unequipped Szczęśliwa Sakwa Monet.
+[12:44:19] Sword is in left hand.
+[12:44:19] [12:44:19] Sword is in left hand
+[12:44:21] Szczęśliwa Sakwa Monet is in right hand.
+[12:44:21] [12:44:21] Szczęśliwa Sakwa Monet is in 2 hands now
+[12:44:23] The player is moved
+[12:44:23] [12:44:23] The player is moved
+[12:44:23] The player is moved
+[12:44:23] The player is moved
+[12:44:24] The player is moved
+[12:44:24] [12:44:24] The player is moved
+[12:44:24] The player is moved
+[12:44:24] The player is moved
+[12:44:24] The player is moved
+[12:44:25] The player is moved
+[12:44:25] [12:44:25] The player is moved
+[12:44:25] The player is moved
+[12:44:25] The player is moved
+[12:44:25] The player is moved
+[12:44:26] The player is moved
+[12:44:26] [12:44:26] The player is moved
+[12:44:26] The player is moved
+[12:44:26] The player is moved
+[12:44:26] The player is moved
+[12:44:26] The player is moved
+[12:44:26] The player is moved
+[12:44:26] The player is moved
+[12:44:27] The player is moved
+[12:44:27] [12:44:27] The player is moved
+[12:44:27] The player is moved
+[12:44:27] The player is moved
+[12:44:27] The player is moved
+[12:44:28] You used NormalAttack on Potwór. Out: 0 dmg, Defended: 20. Taken: 0 dmg.
+[12:44:28] [12:44:28] You used NormalAttack on Skeleton. Out: 19 dmg, Defended: 15. Taken: 11 dmg.
+[12:44:30] The player is moved
+[12:44:30] [12:44:30] The player is moved
+[12:44:31] The player is moved
+[12:44:31] [12:44:31] The player is moved
+[12:44:31] The player is moved
+[12:44:32] The player is moved
+[12:44:32] [12:44:32] The player is moved
+[12:44:33] The player is moved
+[12:44:33] [12:44:33] The player is moved
+[12:44:34] The player is moved
+[12:44:34] [12:44:34] The player is moved
+[12:44:34] You used StealthAttack on Potwór. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:44:34] [12:44:34] You used StealthAttack on Skeleton. Out: 6 dmg, Defended: 10. Taken: 16 dmg.
+[12:44:35] You used StealthAttack on Potwór. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:44:35] [12:44:35] You used StealthAttack on Skeleton. Out: 6 dmg, Defended: 10. Taken: 16 dmg.
+[12:44:36] You used StealthAttack on Potwór. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:44:36] [12:44:36] You used StealthAttack on Skeleton. Out: 6 dmg, Defended: 10. Taken: 16 dmg.
+[12:44:36] You used StealthAttack on Potwór. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:44:37] You used StealthAttack on Potwór. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:44:37] [12:44:37] You used StealthAttack on Zombie. Out: 6 dmg, Defended: 10. Taken: 0 dmg.
+[12:44:37] You used StealthAttack on Potwór. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:44:40] The player is moved
+[12:44:40] [12:44:40] The player is moved
+[12:44:40] The player is moved
+[12:44:41] The player is moved
+[12:44:41] [12:44:41] The player is moved
+[12:44:41] The player is moved
+[12:44:43] The player is moved
+[12:44:43] [12:44:43] The player is moved
+[12:44:43] The player is moved
+[12:44:44] The player is moved
+[12:44:44] [12:44:44] The player is moved
+[12:44:45] The player is moved
+[12:44:45] [12:44:45] The player is moved
+[12:44:45] The player is moved
+[12:44:46] The player is moved
+[12:44:46] [12:44:46] The player is moved
+[12:44:47] The player is moved
+[12:44:47] [12:44:47] The player is moved
+[12:44:47] The player is moved
+[12:44:48] The player is moved
+[12:44:48] [12:44:48] The player is moved
+[12:44:48] The player is moved
+[12:44:49] You used NormalAttack on Potwór. Out: 0 dmg, Defended: 20. Taken: 0 dmg.
+[12:44:49] [12:44:49] You used NormalAttack on Zombie. Out: 19 dmg, Defended: 15. Taken: 0 dmg.
+[12:44:50] You used NormalAttack on Potwór. Out: 0 dmg, Defended: 20. Taken: 0 dmg.
+[12:44:50] [12:44:50] Zombie is killed.
+[12:44:52] The player is moved
+[12:44:52] [12:44:52] The player is moved
+[12:44:53] The player is moved
+[12:44:53] [12:44:53] The player is moved
+[12:44:53] The player is moved
+[12:44:53] The player is moved
+[12:44:54] The player is moved
+[12:44:54] [12:44:54] The player is moved
+[12:44:54] The player is moved
+[12:44:54] The player is moved
+[12:44:54] The player is moved
+[12:44:54] The player is moved
+[12:44:54] The player is moved
+[12:44:55] The player is moved
+[12:44:55] [12:44:55] The player is moved
+[12:44:55] The player is moved
+[12:44:55] The player is moved
+[12:44:55] The player is moved
+[12:44:55] The player is moved
+[12:44:55] The player is moved
+[12:44:55] The player is moved
+[12:44:56] You used NormalAttack on Potwór. Out: 0 dmg, Defended: 20. Taken: 0 dmg.
+[12:44:56] [12:44:56] Skeleton is killed.
+[12:44:56] The player is moved
+[12:44:56] [12:44:56] The player is moved
+[12:44:57] The player is moved
+[12:44:57] [12:44:57] The player is moved
+[12:44:57] The player is moved
+[12:44:58] The player is moved
+[12:44:58] [12:44:58] The player is moved
+[12:44:58] The player is moved
+[12:44:58] The player is moved
+[12:44:59] The player is moved
+[12:44:59] [12:44:59] The player is moved
+[12:44:59] The player is moved
+[12:44:59] The player is moved
+[12:45:00] The player is moved
+[12:45:00] [12:45:00] The player is moved
+[12:45:00] The player is moved
+[12:45:01] The player is moved
+[12:45:01] [12:45:01] The player is moved
+[12:45:01] The player is moved
+[12:45:01] The player is moved
+[12:45:01] The player is moved
+[12:45:01] The player is moved
+[12:45:01] The player is moved
+[12:45:02] The player is moved
+[12:45:02] [12:45:02] The player is moved
+[12:45:02] The player is moved
+[12:45:02] The player is moved
+[12:45:03] The player is moved
+[12:45:03] [12:45:03] The player is moved
+[12:45:03] The player is moved
+[12:45:03] The player is moved
+[12:45:04] The player is moved
+[12:45:04] [12:45:04] The player is moved
+[12:45:05] The player is moved
+[12:45:05] [12:45:05] The player is moved
+[12:45:05] The player is moved
+[12:45:06] The player is moved
+[12:45:06] [12:45:06] The player is moved
+[12:45:06] The player is moved
+[12:45:06] The player is moved
+[12:45:07] You used NormalAttack on Potwór. Out: 0 dmg, Defended: 20. Taken: 0 dmg.
+[12:45:07] [12:45:07] You used NormalAttack on Zombie. Out: 19 dmg, Defended: 15. Taken: 0 dmg.
+[12:45:07] The player is moved
+[12:45:07] [12:45:07] The player is moved
+[12:45:07] The player is moved
+[12:45:08] The player is moved
+[12:45:08] [12:45:08] The player is moved
+[12:45:08] The player is moved
+[12:45:08] The player is moved
+[12:45:09] The player is moved
+[12:45:09] [12:45:09] The player is moved
+[12:45:10] The player is moved
+[12:45:10] [12:45:10] The player is moved
+[12:45:12] The player is moved
+[12:45:12] [12:45:12] The player is moved
+[12:45:12] You used MagicAttack on Potwór. Out: 0 dmg, Defended: 10. Taken: 0 dmg.
+[12:45:12] [12:45:12] You used MagicAttack on Zombie. Out: 1 dmg, Defended: 5. Taken: 0 dmg.
+[12:45:12] You used MagicAttack on Potwór. Out: 0 dmg, Defended: 10. Taken: 0 dmg.
+[12:45:12] You used MagicAttack on Potwór. Out: 0 dmg, Defended: 10. Taken: 0 dmg.
+[12:45:13] You used MagicAttack on Potwór. Out: 0 dmg, Defended: 10. Taken: 0 dmg.
+[12:45:13] [12:45:13] You used MagicAttack on Zombie. Out: 1 dmg, Defended: 5. Taken: 0 dmg.
+[12:45:13] You used MagicAttack on Potwór. Out: 0 dmg, Defended: 10. Taken: 0 dmg.
+[12:45:13] You used MagicAttack on Potwór. Out: 0 dmg, Defended: 10. Taken: 0 dmg.
+[12:45:13] You used MagicAttack on Potwór. Out: 0 dmg, Defended: 10. Taken: 0 dmg.
+[12:45:13] You used MagicAttack on Potwór. Out: 0 dmg, Defended: 10. Taken: 0 dmg.
+[12:45:13] You used MagicAttack on Potwór. Out: 0 dmg, Defended: 10. Taken: 0 dmg.
+[12:45:14] You used MagicAttack on Potwór. Out: 0 dmg, Defended: 10. Taken: 0 dmg.
+[12:45:14] [12:45:14] You used MagicAttack on Zombie. Out: 1 dmg, Defended: 5. Taken: 0 dmg.
+[12:45:14] The player is moved
+[12:45:14] [12:45:14] The player is moved
+[12:45:15] The player is moved
+[12:45:15] [12:45:15] The player is moved
+[12:45:16] The player is moved
+[12:45:16] [12:45:16] The player is moved
+[12:45:16] The player is moved
+[12:45:16] You used NormalAttack on Potwór. Out: 0 dmg, Defended: 20. Taken: 0 dmg.
+[12:45:16] [12:45:16] Zombie is killed.
+[12:45:18] The player is moved
+[12:45:18] [12:45:18] The player is moved
+[12:45:18] The player is moved
+[12:45:18] The player is moved
+[12:45:19] The player is moved
+[12:45:19] [12:45:19] The player is moved

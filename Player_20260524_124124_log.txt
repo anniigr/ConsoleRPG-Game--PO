@@ -1,0 +1,86 @@
+[12:41:24] === Rozpoczęto nową grę ===
+[12:41:24] [12:41:21] [LOG] Map builded.
+[12:41:26] The player is moved
+[12:41:26] [12:41:26] The player is moved
+[12:41:26] The player is moved
+[12:41:27] The player is moved
+[12:41:27] [12:41:27] The player is moved
+[12:41:27] The player is moved
+[12:41:27] The player is moved
+[12:41:37] [12:41:37] The player is moved
+[12:41:38] [12:41:38] The player is moved
+[12:41:40] [12:41:40] The player is moved
+[12:41:41] [12:41:41] The player is moved
+[12:41:43] The player is moved
+[12:41:43] [12:41:43] The player is moved
+[12:41:43] The player is moved
+[12:41:44] The player is moved
+[12:41:44] [12:41:44] The player is moved
+[12:41:44] The player is moved
+[12:41:45] The player is moved
+[12:41:45] [12:41:45] The player is moved
+[12:41:46] The player is moved
+[12:41:46] [12:41:46] The player is moved
+[12:41:46] The player is moved
+[12:41:46] The player is moved
+[12:41:46] The player is moved
+[12:41:47] The player is moved
+[12:41:47] [12:41:47] The player is moved
+[12:41:47] The player is moved
+[12:41:47] The player is moved
+[12:41:48] The player is moved
+[12:41:48] [12:41:48] The player is moved
+[12:41:48] The player is moved
+[12:41:48] The player is moved
+[12:41:48] The player is moved
+[12:41:49] The player is moved
+[12:41:49] [12:41:49] The player is moved
+[12:41:49] The player is moved
+[12:41:49] The player is moved
+[12:41:49] The player is moved
+[12:41:50] The player is moved
+[12:41:50] [12:41:50] The player is moved
+[12:41:50] The player is moved
+[12:41:50] The player is moved
+[12:41:51] The player is moved
+[12:41:51] [12:41:51] The player is moved
+[12:41:52] The player is moved
+[12:41:52] [12:41:52] The player is moved
+[12:41:53] The player is moved
+[12:41:53] [12:41:53] The player is moved
+[12:41:53] The player is moved
+[12:41:54] Picked up: Sword.
+[12:41:54] [12:41:54] Picked up: Sword.
+[12:41:56] The player is moved
+[12:41:56] [12:41:56] The player is moved
+[12:41:58] Sword is in right hand.
+[12:41:58] [12:41:58] Sword is in right hand
+[12:42:01] The player is moved
+[12:42:01] [12:42:01] The player is moved
+[12:42:01] The player is moved
+[12:42:04] The player is moved
+[12:42:04] [12:42:04] The player is moved
+[12:42:05] The player is moved
+[12:42:05] [12:42:05] The player is moved
+[12:42:05] You used StealthAttack on Potwór. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:42:05] [12:42:05] Skeleton is killed.
+[12:42:07] The player is moved
+[12:42:07] [12:42:07] The player is moved
+[12:42:23] The player is moved
+[12:42:23] [12:42:23] The player is moved
+[12:42:24] The player is moved
+[12:42:24] [12:42:24] The player is moved
+[12:42:26] The player is moved
+[12:42:26] [12:42:26] The player is moved
+[12:42:26] The player is moved
+[12:42:26] The player is moved
+[12:42:27] The player is moved
+[12:42:27] [12:42:27] The player is moved
+[12:42:27] The player is moved
+[12:42:28] The player is moved
+[12:42:28] [12:42:28] The player is moved
+[12:42:29] The player is moved
+[12:42:29] [12:42:29] The player is moved
+[12:42:29] The player is moved
+[12:42:29] You used StealthAttack on Potwór. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:42:29] [12:42:29] Skeleton is killed.

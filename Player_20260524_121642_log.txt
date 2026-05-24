@@ -1,0 +1,35 @@
+[12:16:42] === Rozpoczęto nową grę ===
+[12:16:42] [12:16:37] The player is moved
+[12:16:43] [12:16:43] The player is moved
+[12:16:44] [12:16:44] The player is moved
+[12:16:45] [12:16:45] The player is moved
+[12:16:50] [12:16:50] Picked up a gold bar
+[12:16:53] [12:16:53] The player is moved
+[12:16:54] [12:16:54] The player is moved
+[12:16:56] [12:16:56] The player is moved
+[12:16:57] [12:16:57] The player is moved
+[12:16:59] [12:16:59] The player is moved
+[12:17:00] [12:17:00] The player is moved
+[12:17:01] [12:17:01] The player is moved
+[12:17:02] [12:17:02] The player is moved
+[12:17:03] [12:17:03] The player is moved
+[12:17:04] [12:17:04] The player is moved
+[12:17:05] [12:17:05] The player is moved
+[12:17:06] [12:17:06] The player is moved
+[12:17:07] [12:17:07] The player is moved
+[12:17:08] [12:17:08] The player is moved
+[12:17:09] [12:17:09] The player is moved
+[12:17:11] [12:17:11] The player is moved
+[12:17:13] [12:17:13] The player is moved
+[12:17:14] [12:17:14] The player is moved
+[12:17:15] [12:17:15] You used NormalAttack on Skeleton. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:17:16] [12:17:16] You used NormalAttack on Skeleton. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:17:17] [12:17:17] You used NormalAttack on Skeleton. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:17:18] [12:17:18] You used NormalAttack on Skeleton. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:17:19] [12:17:19] You used NormalAttack on Skeleton. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:17:22] [12:17:22] Gra zakończona przez gracza.
+[12:17:25] [12:17:25] Gra zakończona przez gracza.
+[12:17:25] [12:17:25] You used NormalAttack on Skeleton. Out: 0 dmg, Defended: 0. Taken: 10 dmg.
+[12:17:28] [12:17:28] Gra zakończona przez gracza.
+[12:17:29] [12:17:29] Gra zakończona przez gracza.
+[12:17:30] [12:17:30] Gra zakończona przez gracza.

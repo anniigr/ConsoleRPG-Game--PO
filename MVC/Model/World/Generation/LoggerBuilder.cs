@@ -1,3 +1,5 @@
+using ConsoleRPG.Log;
+
 namespace ConsoleRPG.World;
 public class LoggingDungeonBuilder : IDungeonBuilder 
 {
@@ -7,14 +9,14 @@ public class LoggingDungeonBuilder : IDungeonBuilder
     public IDungeonBuilder AddStep(IDungeonStep step) 
     {
         _steps.Add(step);
-        Console.WriteLine($"[LOG] {step.GetDescription()}"); 
-        Thread.Sleep(800);
+        GameLogger.GetInstance().Log($"[LOG] {step.GetDescription()}"); 
+        Thread.Sleep(50);
         return this;
     }
 
     public IDungeonBuilder SetSize(int width, int height) {
         _w = width; _h = height;
-        Console.WriteLine($"[LOG] Size set: {width}x{height}");
+        GameLogger.GetInstance().Log($"[LOG] Size set: {width}x{height}"); 
         return this;
     }
 
@@ -34,9 +36,7 @@ public class LoggingDungeonBuilder : IDungeonBuilder
             this.AddStep(step);
             step.Apply(map);
         }
-
-        Console.WriteLine("[LOG] Map builded.");
+        GameLogger.GetInstance().Log("[LOG] Map builded."); 
         return map;
-
     }
 }

@@ -96,3 +96,14 @@ public class Skeleton : Enemy
         GameLogger.GetInstance().Log($"Skeleton is in furror. His AttackValue encreased up to {AttackValue}");
     }
 }
+
+public class SimpleEnemy : Enemy 
+{
+    public SimpleEnemy(string name, char symbol, int x, int y, int hp, int attack, int armor) 
+        : base(name, symbol, x, y, hp, attack, armor) { }
+        public override void MemberDied(string name)
+    {
+        this.AttackValue += 0 ;
+        GameLogger.GetInstance().Log($"Skeleton is in furror. His AttackValue encreased up to {AttackValue}");
+    }
+}

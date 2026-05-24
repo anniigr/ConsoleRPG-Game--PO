@@ -1,4 +1,4 @@
-\n===== ./Combat/IAttackVisitor.cs =====\n
+\n===== ./MVC/Controller/Combat/IAttackVisitor.cs =====\n
 namespace ConsoleRPG.Combat;
 using ConsoleRPG.Items;
 public interface IAttackVisitor
@@ -9,7 +9,7 @@ public interface IAttackVisitor
     void Visit(LightWeapon weapon);
     void Visit(MagicWeapon weapon);
     void Visit(Item item);
-}\n===== ./Combat/MagicAttack.cs =====\n
+}\n===== ./MVC/Controller/Combat/MagicAttack.cs =====\n
 namespace ConsoleRPG.Combat;
 using ConsoleRPG.Items;
 using ConsoleRPG.Entities;
@@ -51,7 +51,7 @@ public class MagicAttack : IAttackVisitor
         ResultDamage = 0;
         ResultDefense = _player.Luck;
     }
-}\n===== ./Combat/NormalAttack.cs =====\n
+}\n===== ./MVC/Controller/Combat/NormalAttack.cs =====\n
 namespace ConsoleRPG.Combat;
 using ConsoleRPG.Items;
 using ConsoleRPG.Entities;
@@ -91,7 +91,7 @@ public class NormalAttack : IAttackVisitor
         ResultDamage = 0;
         ResultDefense = _player.Dexterity;
     }
-}\n===== ./Combat/StealthAttack.cs =====\n
+}\n===== ./MVC/Controller/Combat/StealthAttack.cs =====\n
 namespace ConsoleRPG.Combat;
 using ConsoleRPG.Items;
 using ConsoleRPG.Entities;
@@ -131,47 +131,1387 @@ public class StealthAttack : IAttackVisitor
         ResultDamage = 0;
         ResultDefense = 0;
     }
-}\n===== ./Config/GameManager.cs =====\n
-using System.Text.Json;
+}\n===== ./MVC/Controller/Game/Game.cs =====\n
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using ConsoleRPG.Entities;
+using ConsoleRPG.Config;
 using ConsoleRPG.World;
-namespace ConsoleRPG.Config;
-public static class ConfigManager
-{
-    private const string _configFilePath = "config.json";
-    public static GameConfig LoadConfig()
-    {
-        var options = new JsonSerializerOptions 
-        { 
-            PropertyNameCaseInsensitive = true,
-            WriteIndented = true 
-        };
-        if (!File.Exists(_configFilePath))
-        {
-            var defaultConfig = new GameConfig();
-            string json = JsonSerializer.Serialize(defaultConfig, options);
-            File.WriteAllText(_configFilePath,json);
-        }
-        
+using ConsoleRPG.Log;
+using ConsoleRPG.Systems;
+using ConsoleRPG.MVC.View;
+using ConsoleRPG.Network;
+using ConsoleRPG.Items;
 
-        string jsonString = File.ReadAllText(_configFilePath);
-        try
+namespace ConsoleRPG.Engine
+{
+    public class GameEngine 
+    {
+        public Map map { get; private set; }
+        public Dictionary<int, Player> players { get; private set; } = new Dictionary<int, Player>(); 
+        public int playerId;
+        public Player player => players.ContainsKey(playerId) ? players[playerId] : null;
+        public bool isServer;
+        public bool IsRunning { get; private set; } = true;
+        private string _lastReceivedLog = string.Empty;
+
+
+        private IGameView _view;
+        private ActionManager _actionManager;
+        private IGameState _currentState;
+        private Dictionary<int, IGameState> _playerStates = new Dictionary<int, IGameState>();
+        private EnemySystem _enemySystem;
+
+        public GameEngine(GameConfig config, bool isServer)
         {
-            return JsonSerializer.Deserialize<GameConfig>(jsonString, options) ?? new GameConfig();
+            this.isServer = isServer;
+            _actionManager = new ActionManager();
+            _enemySystem = new EnemySystem();
+            _currentState = new MapState();
+
+            if (isServer)
+            {
+                IDungeonBuilder debugBuilder = new LoggingDungeonBuilder();
+                var director = new DungeonDirector(debugBuilder);
+                GameLogger.GetInstance(config.PlayerName, config.FileName);
+                IDungeonThemeFactory currentTheme = ThemeSelector.SelectTheme(config.Theme);
+                GameLogger.GetInstance().Log(currentTheme.GetGreetingMessage());
+
+                map = director.CreateThemeMap(currentTheme);
+            }
+            
+            // На сервере по умолчанию view не нужен, на клиенте инициализируется после получения карты
+            _view = new ConsoleView(map, players);
         }
-        catch
+        public void Quit()
         {
-            return new GameConfig();
+            IsRunning = false; 
+            GameLogger.GetInstance().Log("Gra zakończona przez gracza.");
+        }
+
+        // ==========================================
+        // ВОССТАНОВЛЕННЫЕ МЕТОДЫ ДЛЯ ВАШИХ IGameState
+        // ==========================================
+
+        public void ChangeState(IGameState newGameState) 
+        {
+            _currentState = newGameState;
+            
+            // Если мы клиент, сразу перерисовываем экран (например, открываем инвентарь)
+            if (!isServer && _view != null)
+            {
+                _currentState.Draw(_view, this);
+            }
+        }
+
+        public void ExcecuteAction(ConsoleKey key)
+        {
+            var action = _actionManager.FindAction(key);
+            if (action != null && action.IsExecutable(this))
+            {
+                action.Execute(this);
+            }
+            else
+            {
+                GameLogger.GetInstance().Log($"Wciśnięto nieznany lub zablokowany klawisz: {key}");
+            }
+        }
+
+        public void ProcessEnemyTurn()
+        {
+            // ВАЖНО: В мультиплеере ИИ врагов должен работать ТОЛЬКО на сервере!
+            if (isServer)
+            {
+                _enemySystem.ProcessTurn(this.map);
+            }
+        }
+
+        public string GetFloorInfo()
+        {
+            if (player == null || map == null) return "Void";
+            
+            var cell = map.GetCell(player.X, player.Y);
+            if (cell == null) return "Void";
+            
+            if (cell.Items.Count > 0)
+            {
+                return cell.Items.Count > 1 
+                    ? $"Items here ({cell.Items.Count})" 
+                    : $"Item: {cell.Items[0].Name}";
+            }
+            
+            return "Empty floor";
+        }
+
+        // ==========================================
+        // СЕТЕВЫЕ МЕТОДЫ (МУЛЬТИПЛЕЕР)
+        // ==========================================
+
+        public void ExecuteActionForPlayer(int id, ConsoleKey key)
+        {
+            lock (this)
+            {
+                if (!players.ContainsKey(id)) return;
+                this.playerId = id; // Переключаем контекст выполнения на этого игрока
+
+                if (isServer)
+                {
+                    if (!_playerStates.ContainsKey(id)) _playerStates[id] = new MapState();
+                    _currentState = _playerStates[id];
+                }
+                var action = _currentState.GetActionManager().FindAction(key);
+                if (action != null && action.IsExecutable(this))
+                {
+                    action.Execute(this);
+                }
+                if (isServer) _playerStates[id] = _currentState; // Сохраняем состояние на сервере
+                else _currentState.Draw(_view, this);}
+        }
+
+        public void LoadMapFromServer(ConnectionInitDto init)
+        {
+            map = new Map(init.Width, init.Height);
+            for (int y = 0; y < init.Height; y++)
+            {
+                for (int x = 0; x < init.Width; x++)
+                {
+                    // ВАЖНО: Мы должны сами создать клетку с нужным ландшафтом и положить ее в карту!
+                    Terrain terrain = (init.MapRows[y][x] == '#') ? new Wall() : new Floor();
+                    map.SetCell(x, y, new Cell(terrain));
+                }
+            }
+            _view = new ConsoleView(map, players);
+        }
+
+        public void SyncFromServer(GameUpdateDto update)
+        {
+            this.playerId = update.YourPlayerId;
+            if (!string.IsNullOrEmpty(update.LastLog) && _lastReceivedLog != update.LastLog)
+            {
+                _lastReceivedLog = update.LastLog;
+                // Записываем серверное событие в локальный лог клиента, чтобы View его отрисовал
+                GameLogger.GetInstance().Log(update.LastLog); 
+            }
+
+            // Очищаем старых врагов и предметы перед обновлением
+            for (int y = 0; y < map.Height; y++)
+            {
+                for (int x = 0; x < map.Width; x++)
+                {
+                    var cell = map.GetCell(x, y);
+                    if (cell != null)
+                    {
+                        cell.Enemy = null;
+                        cell.Items.Clear();
+                    }
+                }
+            }
+
+            // Синхронизация игроков
+            foreach (var pDto in update.Players)
+            {
+                if (!players.ContainsKey(pDto.Id))
+                {
+                    players[pDto.Id] = new Player(pDto.X, pDto.Y) { Name = pDto.Name };
+                }
+                var p = players[pDto.Id];
+                p.X = pDto.X; p.Y = pDto.Y; p.Health = pDto.Health;
+                
+                // Восстанавливаем всю статистику
+                p.Strength = pDto.Strength; p.Dexterity = pDto.Dexterity; p.Luck = pDto.Luck;
+                p.Aggression = pDto.Aggression; p.Wisdom = pDto.Wisdom;
+                p.Coins = pDto.Coins; p.Gold = pDto.Gold;
+                
+                // Визуализируем руки и инвентарь
+                p.LeftHand = string.IsNullOrEmpty(pDto.LeftHandName) ? null : new GenericItem(pDto.LeftHandName, ' ');
+                p.RightHand = string.IsNullOrEmpty(pDto.RightHandName) ? null : new GenericItem(pDto.RightHandName, ' ');
+                
+                p.Inventory.Clear();
+                foreach (var itemName in pDto.InventoryNames) p.Inventory.Add(new GenericItem(itemName, 'I'));
+            }
+
+            // Удаление отключившихся
+            var activeIds = update.Players.Select(p => p.Id).ToHashSet();
+            var toRemove = players.Keys.Where(id => !activeIds.Contains(id)).ToList();
+            foreach (var id in toRemove) players.Remove(id);
+
+            // Синхронизация врагов
+            foreach (var eDto in update.Enemies)
+            {
+                var cell = map.GetCell(eDto.X, eDto.Y);
+                if (cell != null)
+                {
+                    cell.Enemy = new SimpleEnemy("Potwór", eDto.Symbol, eDto.X, eDto.Y, 50, 10, 2);
+                }
+            }
+
+            // Синхронизация предметов
+            foreach (var iDto in update.Items)
+            {
+                var cell = map.GetCell(iDto.X, iDto.Y);
+                if (cell != null)
+                {
+                    cell.Items.Add(new GenericItem(iDto.Name, iDto.Symbol));
+                }
+            }
+
+            // Отрисовка кадра через ваш IGameState/ConsoleView
+            _currentState.Draw(_view, this);
         }
     }
-}\n===== ./Config/GameConfig.cs =====\n
-using ConsoleRPG.World;
-namespace ConsoleRPG.Config;
-public class GameConfig
+}\n===== ./MVC/Controller/Game/Actions/IAction.cs =====\n
+using ConsoleRPG.Engine;
+// Command
+public interface IAction
 {
-    public string PlayerName { get; set; } = "Anna";
-    public string Theme { get; set; } = "Vault"; 
-    public string FileName { get; set; } = "./log";
-}\n===== ./World/Cell.cs =====\n
+    string Name {get;}
+    ConsoleKey Key {get;}
+    bool IsExecutable(GameEngine engine);
+    void Execute(GameEngine engine);
+}
+public class ChangeStateAction : IAction
+{
+    private readonly Func<IGameState> _stateFactory;
+    public string Name { get; }
+    public ConsoleKey Key { get; }
+
+    public ChangeStateAction(string name, ConsoleKey key, Func<IGameState> stateFactory)
+    {
+        Name = name;
+        Key = key;
+        _stateFactory = stateFactory;
+    }
+
+    public bool IsExecutable(GameEngine engine) => true;
+    public void Execute(GameEngine engine) => engine.ChangeState(_stateFactory());
+}
+
+\n===== ./MVC/Controller/Game/Actions/InventoryActions.cs =====\n
+using System;
+using ConsoleRPG.Engine;
+
+namespace ConsoleRPG.Engine;
+    public class InventoryMoveUp : IAction
+    {
+        private readonly InventoryState _state;
+        public InventoryMoveUp(InventoryState state) => _state = state;
+        public string Name => "Cursor Up";
+        public ConsoleKey Key => ConsoleKey.W;
+
+        public bool IsExecutable(GameEngine engine) => true;
+
+        public void Execute(GameEngine engine) => _state.MoveCursor(-1, engine.player.Inventory.Count);
+    }
+
+    public class InventoryMoveDown : IAction
+    {
+        private readonly InventoryState _state;
+        public InventoryMoveDown(InventoryState state) => _state = state;
+        public string Name => "Cursor Down";
+        public ConsoleKey Key => ConsoleKey.S;
+
+        public bool IsExecutable(GameEngine engine) => true;
+
+        public void Execute(GameEngine engine) => _state.MoveCursor(1, engine.player.Inventory.Count);
+    }
+
+    public class EquipLeftAction : IAction
+    {
+        private readonly InventoryState _state;
+        public EquipLeftAction(InventoryState state) => _state = state;
+        public string Name => "Equip Left";
+        public ConsoleKey Key => ConsoleKey.L;
+
+        public bool IsExecutable(GameEngine engine) => engine.player.Inventory.Count > 0;
+
+        public void Execute(GameEngine engine) => 
+            engine.player.Inventory[_state.InventoryCursor].EquipLeft(engine.player);
+    }
+
+    public class EquipRightAction : IAction
+    {
+        private readonly InventoryState _state;
+        public EquipRightAction(InventoryState state) => _state = state;
+        public string Name => "Equip Right";
+        public ConsoleKey Key => ConsoleKey.R;
+
+        public bool IsExecutable(GameEngine engine) => engine.player.Inventory.Count > 0;
+
+        public void Execute(GameEngine engine) => 
+            engine.player.Inventory[_state.InventoryCursor].EquipRight(engine.player);
+    }
+    public class UnequipRightAction : IAction
+    {
+        public string Name => "Unequip Right";
+        public ConsoleKey Key => ConsoleKey.D2;
+        public bool IsExecutable(GameEngine engine) => engine.player.RightHand != null;
+        public void Execute (GameEngine engine) => engine.player.UnequipRight();
+        
+    }
+    public class UnequipLeftAction : IAction
+    {
+        public string Name => "Unequip Left";
+        public ConsoleKey Key => ConsoleKey.D1;
+        public bool IsExecutable(GameEngine engine) => engine.player.LeftHand != null;
+        public void Execute (GameEngine engine) => engine.player.UnequipLeft();
+        
+    }
+
+
+    public class DropItemAction : IAction
+    {
+        private readonly InventoryState _state;
+        public DropItemAction(InventoryState state) => _state = state;
+        public string Name => "Drop Item";
+        public ConsoleKey Key => ConsoleKey.Q;
+
+        public bool IsExecutable(GameEngine engine) => engine.player.Inventory.Count > 0;
+
+        public void Execute(GameEngine engine)
+        {
+            var inv = engine.player.Inventory;
+            int idx = _state.InventoryCursor;
+
+            if (inv.Count == 0) return;
+
+            if (idx >= 0 && idx < inv.Count)
+            {
+                var item = inv[idx];
+                var cell = engine.map.GetCell(engine.player.X, engine.player.Y);
+                
+                item.Drop(engine.player, cell);
+
+                if (_state.InventoryCursor >= inv.Count && inv.Count > 0)
+                {
+                    _state.MoveCursor(-1, inv.Count);
+                }
+                else if (inv.Count == 0)
+                {
+                    _state.MoveCursor(0, 0); 
+                }
+            }
+        }
+    }
+\n===== ./MVC/Controller/Game/Actions/MapActions.cs =====\n
+using System;
+using ConsoleRPG.Engine;
+using ConsoleRPG.Combat;
+using ConsoleRPG.Entities;
+using ConsoleRPG.Log;
+namespace ConsoleRPG.Engine
+{
+    public abstract class MoveAction : IAction
+    {
+        public abstract string Name { get; }
+        public abstract ConsoleKey Key { get; }
+        protected abstract int DX { get; }
+        protected abstract int DY { get; }
+
+        public bool IsExecutable(GameEngine engine)
+        {
+            var targetCell = engine.map.GetCell(engine.player.X + DX, engine.player.Y + DY);
+            return targetCell != null && targetCell.Terrain.IsPassable();
+        }
+
+        public void Execute(GameEngine engine)
+        {
+            engine.player.Move(DX, DY, engine.map);
+            if (engine.player.Health <= 0)
+            {
+                GameLogger.GetInstance().Log("YOU ARE DEAD");
+                engine.Quit(); 
+            }
+        }
+    }
+
+    public class MoveUp : MoveAction {
+        public override string Name => "Move Up";
+        public override ConsoleKey Key => ConsoleKey.W;
+        protected override int DX => 0;
+        protected override int DY => -1;
+    }
+
+    public class MoveDown : MoveAction {
+        public override string Name => "Move Down";
+        public override ConsoleKey Key => ConsoleKey.S;
+        protected override int DX => 0;
+        protected override int DY => 1;
+    }
+
+    public class MoveLeft : MoveAction {
+        public override string Name => "Move Left";
+        public override ConsoleKey Key => ConsoleKey.A;
+        protected override int DX => -1;
+        protected override int DY => 0;
+    }
+
+    public class MoveRight : MoveAction {
+        public override string Name => "Move Right";
+        public override ConsoleKey Key => ConsoleKey.D;
+        protected override int DX => 1;
+        protected override int DY => 0;
+    }
+
+    public class PickUpAction : IAction
+    {
+        public string Name => "Pick Up Item";
+        public ConsoleKey Key => ConsoleKey.E;
+        
+        public bool IsExecutable(GameEngine engine) => 
+            engine.map.GetCell(engine.player.X, engine.player.Y).Items.Count > 0;
+
+        public void Execute(GameEngine engine) => engine.player.PickUp(engine.map);
+    }
+
+    public class SpecialAttackAction : IAction {
+    private readonly Func<Player, IAttackVisitor> _visitorFactory;
+    public string Name { get; }
+    public ConsoleKey Key { get; }
+
+    public SpecialAttackAction(string name, ConsoleKey key, Func<Player, IAttackVisitor> factory) {
+        Name = name; Key = key; _visitorFactory = factory;
+    }
+
+    public bool IsExecutable(GameEngine engine) {
+    int[] dx = { 0, 0, 0, -1, 1 };
+    int[] dy = { 0, -1, 1, 0, 0 };
+
+    for (int i = 0; i < 5; i++) {
+        var cell = engine.map.GetCell(engine.player.X + dx[i], engine.player.Y + dy[i]);
+        if (cell != null && cell.Enemy != null) return true;
+    }
+    return false;
+}
+
+public void Execute(GameEngine engine) {
+    int[] dx = { 0, 0, 0, -1, 1 };
+    int[] dy = { 0, -1, 1, 0, 0 };
+
+    for (int i = 0; i < 5; i++) {
+        var cell = engine.map.GetCell(engine.player.X + dx[i], engine.player.Y + dy[i]);
+        if (cell != null && cell.Enemy != null) {
+            var enemy = cell.Enemy;
+            engine.player.AttackEnemy(enemy, _visitorFactory(engine.player));
+            
+            if (enemy.Health <= 0) cell.Enemy = null;
+            return; 
+        }
+    }
+}
+}
+    public class QuitGame : IAction
+    {
+        public string Name => "Quit Game";
+        public ConsoleKey Key => ConsoleKey.Q;
+        public bool IsExecutable(GameEngine engine) => true;
+        public void Execute (GameEngine engine) => engine.Quit();  
+    }
+}\n===== ./MVC/Controller/Game/Actions/ActionManager.cs =====\n
+using ConsoleRPG.Engine;
+public class ActionManager
+{
+    private List<IAction> list = new List<IAction>();
+    public void AddAction(IAction action)
+    {
+        list.Add(action);
+    }
+    public IAction? FindAction(ConsoleKey key)
+    {
+        return list.FirstOrDefault(a => a.Key == key);
+    }
+    public IAction? FindActionByType<T>() where T : IAction
+    {
+        return list.FirstOrDefault(a => a is T);
+        
+    }
+    public List<IAction> GetAvailableActions(GameEngine engine)
+    {
+        return list.Where(a => a.IsExecutable(engine)).ToList();
+    }
+}
+
+\n===== ./MVC/Controller/Game/IGameState.cs =====\n
+using ConsoleRPG.Combat;
+using ConsoleRPG.Log;
+using ConsoleRPG.MVC.View;
+namespace ConsoleRPG.Engine;
+public interface IGameState
+{
+    public void Update(GameEngine engine, ConsoleKey key);
+    public void Draw(IGameView view, GameEngine engine);
+    ActionManager GetActionManager();
+    string GetPanelLine(int lineIndex, GameEngine engine);
+}
+
+public class MapState : IGameState
+{
+    private readonly ActionManager _actions;
+    public ActionManager GetActionManager() => _actions;
+    public List<IAction> GetActions(GameEngine engine) => _actions.GetAvailableActions(engine);
+    public MapState()
+    {
+        _actions = new ActionManager();
+        _actions.AddAction(new MoveUp());
+        _actions.AddAction(new MoveDown());
+        _actions.AddAction(new MoveLeft());
+        _actions.AddAction(new MoveRight());
+        _actions.AddAction(new PickUpAction());
+        _actions.AddAction(new QuitGame());
+        _actions.AddAction(new ChangeStateAction("Inventory", ConsoleKey.I, () => new InventoryState()));
+        _actions.AddAction(new ChangeStateAction("Help", ConsoleKey.H, () => new HelpState(this)));
+
+        _actions.AddAction(new SpecialAttackAction("Normal Attack", ConsoleKey.D1, p => new NormalAttack(p)));
+        _actions.AddAction(new SpecialAttackAction("Stealth Attack", ConsoleKey.D2, p => new StealthAttack(p)));
+        _actions.AddAction(new SpecialAttackAction("Magic Attack", ConsoleKey.D3, p => new MagicAttack(p)));
+        _actions.AddAction(new ChangeStateAction("Dziennik Zdarzeń", ConsoleKey.J, () => new LogHistoryState(this)));
+    }
+    public void Update(GameEngine engine, ConsoleKey key)
+    {
+        var action = _actions.FindAction(key);
+        if (action != null)
+        {
+            action.Execute(engine);
+            engine.ProcessEnemyTurn();
+        }
+        else
+        {
+            engine.ExcecuteAction(key); 
+        }
+    }
+
+    public void Draw(IGameView view, GameEngine engine)
+    {
+        view.DrawFrame(engine,this);
+        view.DrawLog();
+    }
+    public string GetPanelLine(int lineIndex, GameEngine engine)
+    {
+        return lineIndex switch
+        {
+            0 => "--- STATISTICS ---",
+                        1 => $"HP: {engine.player.Health} | Strength: {engine.player.Strength} | Dexterity: {engine.player.Dexterity}",
+                        2 => $"Luck: {engine.player.Luck} | Aggression: {engine.player.Aggression} | Wisdom: {engine.player.Wisdom}",
+                        3 => $"Coins: {engine.player.Coins} | Gold: {engine.player.Gold}",
+                        4 => "--- EQUIPMENT (Press I) ---",
+                        5 => $"Left arm:  {(engine.player.LeftHand != null ? engine.player.LeftHand.Name : "[Empty]")}",
+                        6 => $"Right arm: {(engine.player.RightHand != null ? engine.player.RightHand.Name : "[Empty]")}",
+                        7 => $"Damage:  {engine.player.GetTotalDamage()}",
+                        8 => "--- ENVIRONMENT ---",
+                        9 => engine.GetFloorInfo(),
+                        10 => "[H] Help",
+
+                        _ => ""
+        };
+    }
+}
+
+
+public class InventoryState : IGameState
+{
+    private readonly ActionManager _actions;
+    public ActionManager GetActionManager() => _actions;
+    public int InventoryCursor {get; private set;}
+    public List<IAction> GetActions(GameEngine engine) => _actions.GetAvailableActions(engine);
+    public InventoryState()
+    {
+        _actions = new ActionManager();
+        _actions.AddAction(new InventoryMoveUp(this));
+        _actions.AddAction(new InventoryMoveDown(this));
+        _actions.AddAction(new EquipLeftAction(this));
+        _actions.AddAction(new EquipRightAction(this));
+        _actions.AddAction(new DropItemAction(this));
+        _actions.AddAction(new UnequipLeftAction());
+        _actions.AddAction(new UnequipRightAction());
+        _actions.AddAction(new ChangeStateAction("Inventory", ConsoleKey.I, () => new MapState()));
+        _actions.AddAction(new ChangeStateAction("Help", ConsoleKey.H, () => new HelpState(this)));
+
+
+    }
+    public void Update(GameEngine engine, ConsoleKey key)
+    {
+         _actions.FindAction(key)?.Execute(engine);
+    }
+    public void MoveCursor(int delta, int maxItems)
+    {
+        InventoryCursor += delta;
+        if (InventoryCursor < 0) InventoryCursor = 0;
+        if (maxItems > 0 && InventoryCursor >= maxItems) InventoryCursor = maxItems - 1;
+    }
+    public void Draw(IGameView view, GameEngine engine)
+    {
+        view.DrawFrame(engine,this);
+        view.DrawLog();
+    }
+    public string GetPanelLine(int lineIndex, GameEngine engine)
+    {
+        if (lineIndex == 0) return "--- EQUIPMENT MODE ---";
+        int itemIdx = lineIndex - 2;
+        if (itemIdx >= 0 && itemIdx < engine.player.Inventory.Count)
+        {
+            string pointer = (itemIdx == InventoryCursor) ? "> " : "  ";
+            return $"{pointer}{engine.player.Inventory[itemIdx].Name}";
+        }
+        if (lineIndex == engine.player.Inventory.Count + 3 ) return "[H] Help";
+
+        return "";
+    }
+}
+
+public class HelpState : IGameState
+{
+    private readonly IGameState _previousState;
+    public HelpState(IGameState previousState)
+    {
+        _previousState = previousState;
+    }
+
+    public void Update(GameEngine engine, ConsoleKey key)
+    {
+        if (key == ConsoleKey.H || key == ConsoleKey.Escape)
+        {
+            engine.ChangeState(_previousState);
+        }
+    }
+
+    public void Draw(IGameView view, GameEngine engine)
+    {
+        view.DrawFrame(engine, this);
+        view.DrawLog();
+    }
+    public ActionManager GetActionManager() => _previousState.GetActionManager();
+    public string GetPanelLine(int lineIndex, GameEngine engine)
+    {
+        var actions = _previousState.GetActionManager().GetAvailableActions(engine);
+        if (lineIndex == 0) return "--- HELP ---";
+        int actionIdx = lineIndex - 2;
+        if (actionIdx >= 0 && actionIdx < actions.Count) 
+            return $"[{actions[actionIdx].Key}] {actions[actionIdx].Name}";
+        return "";
+    }
+}
+public class LogHistoryState : IGameState
+{
+    private readonly IGameState _previousState;
+
+    public LogHistoryState(IGameState previousState) => _previousState = previousState;
+
+    public void Update(GameEngine engine, ConsoleKey key)
+    {
+        if (key == ConsoleKey.J || key == ConsoleKey.Escape)
+            engine.ChangeState(_previousState);
+    }
+
+    public void Draw(IGameView view, GameEngine engine)
+    {
+        var logs = GameLogger.GetInstance().GetAllLogs();
+        view.DrawHistory(logs);
+    }
+
+    public ActionManager GetActionManager() => _previousState.GetActionManager();
+    public string GetPanelLine(int lineIndex, GameEngine engine) => "";
+}\n===== ./MVC/Controller/Systems/EnemySystem.cs =====\n
+using ConsoleRPG.World;
+using ConsoleRPG.Entities;
+using System.Collections.Generic;
+
+namespace ConsoleRPG.Systems
+{
+    public class EnemySystem
+    {
+        public void ProcessTurn(Map map)
+        {
+            List<Enemy> allEnemies = new List<Enemy>();
+            for (int x = 0; x < map.Width; x++)
+            {
+                for (int y = 0; y < map.Height; y++)
+                {
+                    if (map.GetCell(x, y).Enemy != null)
+                    {
+                        allEnemies.Add(map.GetCell(x, y).Enemy);
+                    }
+                }
+            }
+
+            foreach (var enemy in allEnemies)
+            {
+                enemy.MoveRandomly(map);
+            }
+        }
+    }
+}\n===== ./MVC/Controller/Logging/FileAndMemoryLogger.cs =====\n
+namespace ConsoleRPG.Log;
+public class FileAndMemoryLogger : ILogger
+{
+    private readonly List<string> _logs = new List<string>();
+    private readonly string _filePath;
+
+    public FileAndMemoryLogger(string playerName, string configPath)
+    {
+        if (!Directory.Exists(configPath))
+        {
+            Directory.CreateDirectory(configPath);
+        }
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        _filePath = Path.Combine(configPath, $"{playerName}_{timestamp}_log.txt");
+        
+        Log("=== Rozpoczęto nową grę ===");
+    }
+
+    public void Log(string message)
+    {
+        string entry = $"[{DateTime.Now:HH:mm:ss}] {message}";
+        _logs.Add(entry);
+
+        try { File.AppendAllText(_filePath, entry + Environment.NewLine); } 
+        catch { }
+    }
+
+    public List<string> GetAllLogs() => _logs;
+    
+    public string GetLastLog() => _logs.Count > 0 ? _logs[^1] : "Brak zdarzeń.";
+    
+    public string GetLogFilePath() => _filePath;
+}\n===== ./MVC/Controller/Logging/ILogger.cs =====\n
+namespace ConsoleRPG.Log;
+public interface ILogger
+{
+    void Log(string message);
+    List<string> GetAllLogs();
+    string GetLastLog();
+    string GetLogFilePath();
+}
+
+public class FileLogger : ILogger
+{
+    private string _filePath;
+    public FileLogger(string playerName, string configPath) {
+        if (!Directory.Exists(configPath))
+        {
+            Directory.CreateDirectory(configPath);
+        }
+        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        _filePath = Path.Combine(configPath, $"{playerName}_{timestamp}_log.txt");
+     
+    }
+    public void Log(string message) => File.AppendAllText(_filePath, message + "\n");
+    public string GetLastLog() => "Zapisano do pliku"; 
+    public List<string> GetAllLogs() => new List<string> { "Logi w pliku: " + _filePath };
+    public string GetLogFilePath() => _filePath;
+}
+
+public class ConsoleLogger : ILogger
+{
+    public void Log(string message) => Console.WriteLine($"[LOG]: {message}");
+    public string GetLastLog() => "Wyświetlono в konsoli";
+    public List<string> GetAllLogs() => new List<string> { "Tylko podgląd konsoli" };
+    public string GetLogFilePath() => "BRAK (Konsola)";
+}\n===== ./MVC/Controller/Logging/GameLogger.cs =====\n
+namespace ConsoleRPG.Log;
+public class GameLogger
+{
+    private static ILogger _instance;
+
+    private GameLogger() { }
+    public static ILogger GetInstance(string name = "Player", string path = "./")
+    {
+        if (_instance == null)
+        {
+            _instance = new FileAndMemoryLogger(name,path);
+        }
+        return _instance;
+    }
+}\n===== ./MVC/Controller/MultiplayerController.cs =====\n
+using System;
+using System.Collections.Generic;
+using ConsoleRPG.Entities;
+using ConsoleRPG.World;
+using ConsoleRPG.Network;
+using ConsoleRPG.Log;
+
+namespace ConsoleRPG.Controllers
+{
+    public class MultiplayerController
+    {
+        private readonly Map _gameMap;
+        private readonly Dictionary<int, Player> _connectedPlayers = new Dictionary<int, Player>();
+        private readonly Dictionary<int, List<string>> _customPlayerLogs = new Dictionary<int, List<string>>();
+        private readonly List<string> _serverGlobalLogs = new List<string>();
+
+        public int MapWidth => 25;
+        public int MapHeight => 12;
+
+        public MultiplayerController()
+        {
+            // Inicjalizacja Twojego obiektu Map o podanych wymiarach
+            _gameMap = new Map(MapWidth, MapHeight);
+            _serverGlobalLogs.Add("Świat gry RPG został zainicjalizowany pomyślnie.");
+        }
+
+        public void RegisterNewPlayer(int id, Player player)
+        {
+            _connectedPlayers[id] = player;
+            _customPlayerLogs[id] = new List<string> { "Wkroczyłeś do lochu jako gracz sieciowy." };
+            
+            // Umieszczenie reprezentacji cyfrowej gracza na Twojej komórce mapy (Cell)
+            Cell spawnCell = _gameMap.GetCell(player.X, player.Y);
+            if (spawnCell != null)
+            {
+                // Zmiana domyślnego znaku '¶' na cyfrę gracza 1-9 na potrzeby renderowania wieloosobowego
+                player.GetType().GetProperty("Symbol")?.SetValue(player, (char)('0' + id));
+            }
+            
+            LogToGlobal($"Gracz [{id}] dołączył do mrocznych podziemi.");
+        }
+
+        public void UnregisterPlayer(int id)
+        {
+            if (_connectedPlayers.TryGetValue(id, out var player))
+            {
+                _connectedPlayers.Remove(id);
+                _customPlayerLogs.Remove(id);
+                LogToGlobal($"Gracz [{id}] odłączył się od serwera.");
+            }
+        }
+
+        public void HandlePlayerAction(int id, string pressedKey)
+        {
+            if (!_connectedPlayers.TryGetValue(id, out var player)) return;
+
+            string command = pressedKey.ToUpper();
+            int dx = 0, dy = 0;
+
+            if (command == "W") dy = -1;
+            else if (command == "S") dy = 1;
+            else if (command == "A") dx = -1;
+            else if (command == "D") dx = 1;
+
+            if (dx != 0 || dy != 0)
+            {
+                // Wywołanie Twojej oryginalnej metody poruszania się
+                player.Move(dx, dy, _gameMap);
+                LogToPlayer(id, $"Przemieściłeś się o wektor [{dx}, {dy}].");
+                
+                // Implementacja wymagań Etapu 5: rozchodzenie się dźwięku (kroków) w sieci do innych graczy
+                PropagateSoundNotification(id, player.X, player.Y, "odgłos ciężkich kroków w ciemności", 4);
+            }
+            else if (command == "E")
+            {
+                // Wywołanie Twojej metody podnoszenia przedmiotów z Cell.Items
+                player.PickUp(_gameMap);
+                LogToPlayer(id, "Próbujesz podnieść przedmiot z ziemi.");
+            }
+            else if (command == "J")
+            {
+                // Wywołanie Twojej metody symulacji walki (użycie ataku wręcz w celach testowych)
+                LogToPlayer(id, "Wyprowadziłeś zamach bronią w powietrze!");
+                PropagateSoundNotification(id, player.X, player.Y, "huk i szczęk stali bojowej", 7);
+            }
+        }
+
+        private void PropagateSoundNotification(int sourceId, int sourceX, int sourceY, string soundDescription, int soundRange)
+        {
+            foreach (var pair in _connectedPlayers)
+            {
+                if (pair.Key == sourceId) continue;
+
+                // Obliczenie odległości Manhattan pomiędzy Twoimi graczami na mapie
+                int distance = Math.Abs(pair.Value.X - sourceX) + Math.Abs(pair.Value.Y - sourceY);
+                if (distance <= soundRange)
+                {
+                    LogToPlayer(pair.Key, $"[SŁYSZYSZ DŹWIĘK] Z odległości {distance} pól dobiega Cię {soundDescription}!");
+                }
+            }
+        }
+
+        public List<string> BuildDynamicGridRepresentation()
+        {
+            List<string> rows = new List<string>();
+            for (int y = 0; y < MapHeight; y++)
+            {
+                string rowString = "";
+                for (int x = 0; x < MapWidth; x++)
+                {
+                    // Sprawdzamy czy na danej pozycji stoi jakiś gracz sieciowy
+                    int playerOnCellId = 0;
+                    foreach (var pair in _connectedPlayers)
+                    {
+                        if (pair.Value.X == x && pair.Value.Y == y)
+                        {
+                            playerOnCellId = pair.Key;
+                            break;
+                        }
+                    }
+
+                    if (playerOnCellId != 0)
+                    {
+                        rowString += playerOnCellId.ToString();
+                    }
+                    else
+                    {
+                        Cell c = _gameMap.GetCell(x, y);
+                        if (c == null) rowString += " ";
+                        else if (!c.Terrain.IsPassable()) rowString += "#"; // Ściana
+                        else if (c.Enemy != null) rowString += "E"; // Przeciwnik
+                        else if (c.Items.Count > 0) rowString += "I"; // Przedmiot
+                        else rowString += "."; // Pusta podłoga
+                    }
+                }
+                rows.Add(rowString);
+            }
+            return rows;
+        }
+
+        public PlayerStatsDto ExportPlayerStats(int id)
+        {
+            if (!_connectedPlayers.TryGetValue(id, out var p)) return new PlayerStatsDto();
+
+            return new PlayerStatsDto
+            {
+                Name = p.Name,
+                Health = p.Health,
+                Strength = p.Strength,
+                Dexterity = p.Dexterity,
+                Luck = p.Luck,
+                Aggression = p.Aggression,
+                Wisdom = p.Wisdom,
+                Coins = p.Coins,
+                Gold = p.Gold,
+                RightHandItem = p.RightHand != null ? p.RightHand.GetType().Name : "Puste",
+                LeftHandItem = p.LeftHand != null ? p.LeftHand.GetType().Name : "Puste",
+                InventoryCount = p.Inventory?.Count ?? 0
+            };
+        }
+
+        public List<string> ExtractMergedLogs(int id)
+        {
+            List<string> merged = new List<string>();
+            if (_customPlayerLogs.TryGetValue(id, out var pLogs))
+            {
+                merged.AddRange(pLogs);
+            }
+            merged.AddRange(_serverGlobalLogs);
+
+            if (merged.Count > 5)
+            {
+                return merged.GetRange(merged.Count - 5, 5);
+            }
+            return merged;
+        }
+
+        private void LogToPlayer(int id, string message)
+        {
+            if (_customPlayerLogs.ContainsKey(id))
+            {
+                _customPlayerLogs[id].Add($"[{DateTime.Now:HH:mm:ss}] {message}");
+            }
+        }
+
+        private void LogToGlobal(string message)
+        {
+            _serverGlobalLogs.Add($"[{DateTime.Now:HH:mm:ss}] [GLOBAL] {message}");
+        }
+    }
+}\n===== ./MVC/Model/Network/GameClient.cs =====\n
+using System;
+using System.IO;
+using System.Net.Sockets;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using ConsoleRPG.Network;
+using ConsoleRPG.Engine;
+using ConsoleRPG.Config;
+
+namespace ConsoleRPG.Networking
+{
+    public class GameClient
+    {
+        private readonly string _ip;
+        private readonly int _port;
+        private TcpClient? _socket;
+        private bool _isActive;
+        private GameEngine _engine;
+
+        public GameClient(string ip, int port)
+        {
+            _ip = ip;
+            _port = port;
+            
+            // Локальный движок-пустышка для клиента, карту загрузим из сети
+            GameConfig config = new GameConfig();
+            _engine = new GameEngine(config, isServer: false);
+        }
+
+        public async Task RunClientAsync()
+        {
+            try
+            {
+                _socket = new TcpClient();
+                await _socket.ConnectAsync(_ip, _port);
+                _isActive = true;
+
+                Console.Clear();
+                Console.WriteLine("[KLIENT] Połączono! Pobieranie mapy z serwera...");
+
+                // Запускаем асинхронное чтение обновлений от сервера
+                _ = Task.Run(ReceiveUpdatesAsync);
+
+                // Основной поток занимается исключительно отправкой нажатых клавиш
+                SendInputLoop();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BŁĄD] Serwer niedostępny: {ex.Message}");
+                Console.ReadKey();
+            }
+        }
+
+        private async Task ReceiveUpdatesAsync()
+        {
+            if (_socket == null) return;
+            var reader = new StreamReader(_socket.GetStream());
+
+            while (_isActive && _socket.Connected)
+            {
+                try
+                {
+                    string? line = await reader.ReadLineAsync();
+                    if (line == null) break;
+
+                    var msg = JsonSerializer.Deserialize<NetworkMessage>(line);
+                    if (msg == null) continue;
+
+                    if (msg.Type == "INIT")
+                    {
+                        var initData = JsonSerializer.Deserialize<ConnectionInitDto>(msg.Payload);
+                        if (initData != null) _engine.LoadMapFromServer(initData);
+                    }
+                    else if (msg.Type == "UPDATE")
+                    {
+                        var updateData = JsonSerializer.Deserialize<GameUpdateDto>(msg.Payload);
+                        if (updateData != null)
+                        {
+                            // Синхронизируем и автоматически перерисовываем карту через ConsoleView
+                            _engine.SyncFromServer(updateData);
+                        }
+                    }
+                }
+                catch
+                {
+                    Console.WriteLine("\nPołączenie z serwerem przerwane.");
+                    break;
+                }
+            }
+            _isActive = false;
+        }
+
+        private void SendInputLoop()
+        {
+            if (_socket == null) return;
+            var writer = new StreamWriter(_socket.GetStream()) { AutoFlush = true };
+
+            while (_isActive)
+            {
+                if (Console.KeyAvailable)
+                {
+                    ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                    if (_engine.playerId != 0) 
+                    {
+                        _engine.ExecuteActionForPlayer(_engine.playerId, keyInfo.Key);
+                    }
+                    var msg = new NetworkMessage { Type = "INPUT", Payload = keyInfo.Key.ToString() };
+                    try
+                    {
+                        writer.WriteLine(JsonSerializer.Serialize(msg));
+                    }
+                    catch { break; }
+                }
+                Thread.Sleep(20);
+            }
+        }
+    }
+}\n===== ./MVC/Model/Network/NetworkDTO.cs =====\n
+using System.Collections.Generic;
+
+namespace ConsoleRPG.Network
+{
+    public class NetworkMessage
+    {
+        public string Type { get; set; } = string.Empty; // "INIT", "UPDATE", "INPUT"
+        public string Payload { get; set; } = string.Empty;
+    }
+
+    public class ConnectionInitDto
+    {
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public List<string> MapRows { get; set; } = new List<string>(); // Символы проходимости '#' и '.'
+    }
+
+    public class PlayerDto
+    {
+        public int Id { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Health { get; set; }
+        public string Name { get; set; } = string.Empty;
+        
+        // ДОБАВЛЕННЫЕ СТАТЫ ДЛЯ ПАНЕЛИ
+        public int Strength { get; set; }
+        public int Dexterity { get; set; }
+        public int Luck { get; set; }
+        public int Aggression { get; set; }
+        public int Wisdom { get; set; }
+        public int Coins { get; set; }
+        public int Gold { get; set; }
+        public string LeftHandName { get; set; } = string.Empty;
+        public string RightHandName { get; set; } = string.Empty;
+        public List<string> InventoryNames { get; set; } = new List<string>();
+    }
+
+    public class EnemyDto
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public char Symbol { get; set; }
+    }
+
+    public class ItemDto
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public char Symbol { get; set; }
+    }
+
+    public class GameUpdateDto
+    {
+        public int YourPlayerId { get; set; }
+        public List<PlayerDto> Players { get; set; } = new List<PlayerDto>();
+        public List<EnemyDto> Enemies { get; set; } = new List<EnemyDto>();
+        public List<ItemDto> Items { get; set; } = new List<ItemDto>();
+        public string LastLog { get; set; } = string.Empty;
+    }
+    public class PlayerStatsDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public int Health { get; set; }
+        public int Strength { get; set; }
+        public int Dexterity { get; set; }
+        public int Luck { get; set; }
+        public int Aggression { get; set; }
+        public int Wisdom { get; set; }
+        public int Coins { get; set; }
+        public int Gold { get; set; }
+        public string RightHandItem { get; set; } = "Puste";
+        public string LeftHandItem { get; set; } = "Puste";
+        public int InventoryCount { get; set; }
+    }
+
+    // Класс всего состояния игры для отрисовки
+    public class GameStateDto
+    {
+        public int PlayerId { get; set; }
+        public List<string> GridRows { get; set; } = new List<string>();
+        public PlayerStatsDto PlayerStats { get; set; } = new PlayerStatsDto();
+        public List<string> RecentLogs { get; set; } = new List<string>();
+    }
+}\n===== ./MVC/Model/Network/GameServer.cs =====\n
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Text.Json;
+using System.Threading.Tasks;
+using ConsoleRPG.Network;
+using ConsoleRPG.Entities;
+using ConsoleRPG.Engine;
+using ConsoleRPG.Config;
+using ConsoleRPG.Log;
+
+namespace ConsoleRPG.Networking
+{
+    public class GameServer
+    {
+        private readonly int _port;
+        private readonly TcpListener _listener;
+        private readonly Dictionary<int, TcpClient> _clients = new Dictionary<int, TcpClient>();
+        private readonly GameEngine _engine;
+        private readonly object _lock = new object();
+        private bool _isRunning;
+
+        public GameServer(int port)
+        {
+            _port = port;
+            _listener = new TcpListener(IPAddress.Any, _port);
+            
+            // Инициализируем главный серверный движок с оригинальной картой
+            GameConfig config = new GameConfig();
+            _engine = new GameEngine(config, isServer: true);
+        }
+
+        public void StartServer()
+        {
+            _isRunning = true;
+            _listener.Start();
+            Console.WriteLine($"[SERWER] Uruchomiony na porcie {_port}. Oczekiwanie na graczy...");
+            Task.Run(AcceptClientsAsync);
+        }
+
+        private async Task AcceptClientsAsync()
+        {
+            while (_isRunning)
+            {
+                try
+                {
+                    TcpClient client = await _listener.AcceptTcpClientAsync();
+                    lock (_lock)
+                    {
+                        if (_clients.Count >= 9) { client.Close(); continue; }
+
+                        int id = 1;
+                        while (_clients.ContainsKey(id)) id++;
+
+                        _clients[id] = client;
+
+                        // Спавним игрока на серверной карте в проходимой точке
+                        int spawnX = 2, spawnY = 2;
+                        while (_engine.map.GetCell(spawnX, spawnY) != null && !_engine.map.GetCell(spawnX, spawnY).Terrain.IsPassable())
+                        {
+                            spawnX++;
+                        }
+
+                        _engine.players[id] = new Player(spawnX, spawnY) { Name = $"Gracz {id}" };
+
+                        Task.Run(() => HandleClientAsync(id, client));
+                        
+                        // 1. Отправляем карту новому клиенту
+                        SendMapInitialization(id, client);
+                        // 2. Рассылаем всем новые позиции
+                        BroadcastState();
+                    }
+                }
+                catch { break; }
+            }
+        }
+
+        private void SendMapInitialization(int id, TcpClient client)
+        {
+            var initDto = new ConnectionInitDto
+            {
+                Width = _engine.map.Width,
+                Height = _engine.map.Height
+            };
+
+            for (int y = 0; y < _engine.map.Height; y++)
+            {
+                string row = "";
+                for (int x = 0; x < _engine.map.Width; x++)
+                {
+                    row += _engine.map.GetCell(x, y).Terrain.IsPassable() ? '.' : '#';
+                }
+                initDto.MapRows.Add(row);
+            }
+
+            var msg = new NetworkMessage { Type = "INIT", Payload = JsonSerializer.Serialize(initDto) };
+            var writer = new StreamWriter(client.GetStream()) { AutoFlush = true };
+            writer.WriteLine(JsonSerializer.Serialize(msg));
+        }
+
+        private async Task HandleClientAsync(int id, TcpClient client)
+        {
+            var reader = new StreamReader(client.GetStream());
+            try
+            {
+                while (_isRunning && client.Connected)
+                {
+                    string? line = await reader.ReadLineAsync();
+                    if (line == null) break;
+
+                    var msg = JsonSerializer.Deserialize<NetworkMessage>(line);
+                    if (msg != null && msg.Type == "INPUT")
+                    {
+                        ConsoleKey key = Enum.Parse<ConsoleKey>(msg.Payload);
+                        lock (_lock)
+                        {
+                            _engine.ExecuteActionForPlayer(id, key);
+                            _engine.ProcessEnemyTurn();
+                        }
+                        BroadcastState();
+                    }
+                }
+            }
+            catch { }
+            finally
+            {
+                lock (_lock)
+                {
+                    _clients.Remove(id);
+                    _engine.players.Remove(id);
+                    client.Close();
+                }
+                BroadcastState();
+            }
+        }
+
+        private void BroadcastState()
+        {
+            foreach (var pair in _clients)
+            {
+                int id = pair.Key;
+                TcpClient client = pair.Value;
+                if (!client.Connected) continue;
+
+                var updateDto = new GameUpdateDto { YourPlayerId = id };
+                updateDto.LastLog = GameLogger.GetInstance().GetLastLog();
+
+                // Собираем игроков
+                foreach (var p in _engine.players)
+                {
+                    updateDto.Players.Add(new PlayerDto { 
+                    Id = p.Key, X = p.Value.X, Y = p.Value.Y, Health = p.Value.Health, Name = p.Value.Name,
+                    Strength = p.Value.Strength, Dexterity = p.Value.Dexterity, Luck = p.Value.Luck,
+                    Aggression = p.Value.Aggression, Wisdom = p.Value.Wisdom,
+                    Coins = p.Value.Coins, Gold = p.Value.Gold,
+                    LeftHandName = p.Value.LeftHand?.Name ?? "",
+                    RightHandName = p.Value.RightHand?.Name ?? "",
+                    InventoryNames = p.Value.Inventory.Select(i => i.Name).ToList() // Передаем инвентарь
+                });
+                }
+
+                // Собираем динамические объекты с карты
+                for (int y = 0; y < _engine.map.Height; y++)
+                {
+                    for (int x = 0; x < _engine.map.Width; x++)
+                    {
+                        var cell = _engine.map.GetCell(x, y);
+                        if (cell == null) continue;
+                        if (cell.Enemy != null)
+                            updateDto.Enemies.Add(new EnemyDto { X = x, Y = y, Symbol = cell.Enemy.Symbol });
+                        foreach (var item in cell.Items)
+                            updateDto.Items.Add(new ItemDto { X = x, Y = y, Name = item.Name,Symbol = item.Symbol });
+                    }
+                }
+
+                try
+                {
+                    var msg = new NetworkMessage { Type = "UPDATE", Payload = JsonSerializer.Serialize(updateDto) };
+                    var writer = new StreamWriter(client.GetStream()) { AutoFlush = true };
+                    writer.WriteLine(JsonSerializer.Serialize(msg));
+                }
+                catch { }
+            }
+        }
+
+        public void TerminateServer()
+        {
+            _isRunning = false;
+            _listener.Stop();
+        }
+    }
+}\n===== ./MVC/Model/World/Cell.cs =====\n
 using ConsoleRPG.Items;
 using ConsoleRPG.Entities;
 namespace ConsoleRPG.World;
@@ -192,7 +1532,7 @@ public class Cell{
         else if (Items.Count() > 0) return Items.Last().Symbol;
         return Terrain.Symbol;
     }
-}\n===== ./World/Terrain.cs =====\n
+}\n===== ./MVC/Model/World/Terrain.cs =====\n
 namespace ConsoleRPG.World;
 
 public abstract class Terrain {
@@ -213,7 +1553,7 @@ public class Wall : Terrain
     public override bool IsPassable() => false;
 }
 
-\n===== ./World/Map.cs =====\n
+\n===== ./MVC/Model/World/Map.cs =====\n
 using ConsoleRPG.Items;
 using ConsoleRPG.Entities.Observers;
 namespace ConsoleRPG.World;
@@ -249,7 +1589,9 @@ public class Map
     {
         return x > 0 && x < Width - 1 && y > 0 && y < Height - 1;
     }
-}\n===== ./World/Generation/LoggerBuilder.cs =====\n
+}\n===== ./MVC/Model/World/Generation/LoggerBuilder.cs =====\n
+using ConsoleRPG.Log;
+
 namespace ConsoleRPG.World;
 public class LoggingDungeonBuilder : IDungeonBuilder 
 {
@@ -259,14 +1601,14 @@ public class LoggingDungeonBuilder : IDungeonBuilder
     public IDungeonBuilder AddStep(IDungeonStep step) 
     {
         _steps.Add(step);
-        Console.WriteLine($"[LOG] {step.GetDescription()}"); 
-        Thread.Sleep(800);
+        GameLogger.GetInstance().Log($"[LOG] {step.GetDescription()}"); 
+        Thread.Sleep(50);
         return this;
     }
 
     public IDungeonBuilder SetSize(int width, int height) {
         _w = width; _h = height;
-        Console.WriteLine($"[LOG] Size set: {width}x{height}");
+        GameLogger.GetInstance().Log($"[LOG] Size set: {width}x{height}"); 
         return this;
     }
 
@@ -286,12 +1628,10 @@ public class LoggingDungeonBuilder : IDungeonBuilder
             this.AddStep(step);
             step.Apply(map);
         }
-
-        Console.WriteLine("[LOG] Map builded.");
+        GameLogger.GetInstance().Log("[LOG] Map builded."); 
         return map;
-
     }
-}\n===== ./World/Generation/IDungeonStep.cs =====\n
+}\n===== ./MVC/Model/World/Generation/IDungeonStep.cs =====\n
 using System.Security.Cryptography.X509Certificates;
 using ConsoleRPG.Entities;
 using ConsoleRPG.Items;
@@ -574,7 +1914,7 @@ public class SpeciesSpawnDefinition
         Factory = factory;
         MinCount = minCount;
     }
-}\n===== ./World/Generation/DungeonDirector.cs =====\n
+}\n===== ./MVC/Model/World/Generation/DungeonDirector.cs =====\n
 namespace ConsoleRPG.World;
 
 
@@ -591,7 +1931,7 @@ public class DungeonDirector
     }
   
 
-}\n===== ./World/Generation/DungeonBuilder.cs =====\n
+}\n===== ./MVC/Model/World/Generation/DungeonBuilder.cs =====\n
 namespace ConsoleRPG.World;
 
 public class DungeonBuilder : IDungeonBuilder
@@ -620,13 +1960,13 @@ public class DungeonBuilder : IDungeonBuilder
         return map;
     }
 } 
-\n===== ./World/Generation/IDungeonBuilder.cs =====\n
+\n===== ./MVC/Model/World/Generation/IDungeonBuilder.cs =====\n
 namespace ConsoleRPG.World;
 
 public interface IDungeonBuilder
 {
     public Map Build(IDungeonThemeFactory themeFactory);
-}\n===== ./World/Generation/Themes/ThemeSelector.cs =====\n
+}\n===== ./MVC/Model/World/Generation/Themes/ThemeSelector.cs =====\n
 using ConsoleRPG.Config;
 namespace ConsoleRPG.World;
 public static class ThemeSelector {
@@ -641,7 +1981,7 @@ public static class ThemeSelector {
         };
     }
     
-}\n===== ./World/Generation/Themes/VaultTheme.cs =====\n
+}\n===== ./MVC/Model/World/Generation/Themes/VaultTheme.cs =====\n
 // ===== ./World/Generation/Themes/VaultThemeFactory.cs =====
 using ConsoleRPG.Entities;
 using ConsoleRPG.Entities.Observers;
@@ -697,7 +2037,7 @@ public class VaultThemeFactory : IDungeonThemeFactory
             new EnemyGenerator(CreateEnemyPool(), 5)
         };
     }
-}\n===== ./World/Generation/Themes/LibraryTheme.cs =====\n
+}\n===== ./MVC/Model/World/Generation/Themes/LibraryTheme.cs =====\n
 // ===== ./World/Generation/Themes/LibraryThemeFactory.cs =====
 using ConsoleRPG.Entities;
 using ConsoleRPG.Items;
@@ -755,7 +2095,7 @@ public class LibraryThemeFactory : IDungeonThemeFactory
             new EnemyGenerator(CreateEnemyPool(), 6)
         };
     }
-}\n===== ./World/Generation/Themes/SciFiTheme.cs =====\n
+}\n===== ./MVC/Model/World/Generation/Themes/SciFiTheme.cs =====\n
 // ===== ./World/Generation/Themes/SciFiThemeFactory.cs =====
 using ConsoleRPG.Entities;
 using ConsoleRPG.Items;
@@ -810,7 +2150,7 @@ public class SciFiThemeFactory : IDungeonThemeFactory
             new EnemyGenerator(CreateEnemyPool(), 8)
         };
     }
-}\n===== ./World/Generation/Themes/IDungeonThemeFactory.cs =====\n
+}\n===== ./MVC/Model/World/Generation/Themes/IDungeonThemeFactory.cs =====\n
 using ConsoleRPG.Entities;
 using ConsoleRPG.Items;
 using System.Collections.Generic;
@@ -827,612 +2167,7 @@ public interface IDungeonThemeFactory
     IEnumerable<Func<Item>> CreateItemPool();
     Item CreateArtifact();
     public IEnumerable<SpeciesSpawnDefinition> CreateEnemyPool();
-}\n===== ./ConsoleRPG_1.csproj =====\n
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-
-</Project>
-\n===== ./Game/Renderer.cs =====\n
-using System;
-using System.Text;
-using System.Linq;
-using ConsoleRPG.Entities;
-using ConsoleRPG.World;
-using ConsoleRPG.Log;
-
-namespace ConsoleRPG.Engine
-{
-    public class Renderer
-    {
-        private Map map;
-        private Player player;
-
-        public Renderer(Map map, Player player)
-        {
-            this.map = map;
-            this.player = player;
-        }
-
-        public void DrawFrame(GameEngine engine, IGameState currentState)
-        {
-            Console.SetCursorPosition(0, 0);
-            StringBuilder screen = new StringBuilder();
-
-            for (int y = 0; y < map.Height; y++)
-            {
-                for (int x = 0; x < map.Width; x++)
-                {
-                    if (x == player.X && y == player.Y) screen.Append('¶');
-                    else screen.Append(map.GetCell(x, y)?.GetDrawSymbol() ?? '#');
-                }
-
-                screen.Append("   | ");
-                
-                string line = currentState.GetPanelLine(y, engine);
-                screen.Append(line.PadRight(50)); 
-                
-                screen.AppendLine();
-            }
-            
-            Console.Write(screen.ToString());
-        }
-        public void DrawLog()
-        {
-            int logLine = map.Height + 1; 
-            
-            Console.SetCursorPosition(0, logLine);
-            Console.Write(new string(' ', Console.WindowWidth)); 
-            
-            Console.SetCursorPosition(0, logLine);
-            Console.ForegroundColor = ConsoleColor.Gray;
-            Console.WriteLine($"> {GameLogger.GetInstance().GetLastLog()}");
-            Console.ResetColor();
-        }
-
-    }
-}\n===== ./Game/Game.cs =====\n
-using System;
-using ConsoleRPG.Entities;
-using ConsoleRPG.Config;
-using ConsoleRPG.World;
-using ConsoleRPG.Log;
-using ConsoleRPG.Systems;
-
-namespace ConsoleRPG.Engine
-{
-    public class GameEngine 
-    {
-        public Map map {get; private set;}
-        public Player player {get; private set;}
-        private Renderer _renderer;
-        private ActionManager _actionManager;
-        private IGameState _currentState;
-        private EnemySystem _enemySystem;
-
-        private bool _isRunning = true;
-
-        public GameEngine(GameConfig config)
-        {
-            IDungeonBuilder debugBuilder = new LoggingDungeonBuilder();
-            var director = new DungeonDirector(debugBuilder);
-
-            GameLogger.GetInstance(config.PlayerName, config.FileName);
-            IDungeonThemeFactory currentTheme = ThemeSelector.SelectTheme(config.Theme);
-            GameLogger.GetInstance().Log(currentTheme.GetGreetingMessage());
-
-            map = director.CreateThemeMap(currentTheme);
-            player = new Player(0,0);
-            _currentState = new MapState();
-            _renderer = new Renderer(map, player);
-            _actionManager = new ActionManager();
-            _enemySystem = new EnemySystem();
-        }
-        public void ChangeState (IGameState newGameState) => _currentState = newGameState;
-        public void Quit () =>_isRunning = false;
-        public void ExcecuteAction (ConsoleKey key)
-        {
-            var action = _actionManager.FindAction(key);
-            if (action != null && action.IsExecutable(this))
-            {
-                action.Execute(this);
-            }
-            else
-            {
-                GameLogger.GetInstance().Log($"Wciśnięto nieznany lub zablokowany klawisz: {key}");
-            }
-        }
-        public void ProcessEnemyTurn()
-        {
-            _enemySystem.ProcessTurn(this.map);
-        }
-        public void Run()
-        {
-            while (_isRunning)
-            {
-                _currentState.Draw(_renderer,this);
-                var key = Console.ReadKey(true).Key;
-                _currentState.Update(this,key);
-            }
-        }
-        public string GetFloorInfo()
-        {
-            var cell = map.GetCell(player.X, player.Y);
-            if (cell == null) return "Void";
-            
-            if (cell.Items.Count > 0)
-            {
-                return cell.Items.Count > 1 
-                    ? $"Items here ({cell.Items.Count})" 
-                    : $"Item: {cell.Items[0].Name}";
-            }
-            
-            return "Empty floor";
-        }
-
-}
-}\n===== ./Game/Actions/IAction.cs =====\n
-using ConsoleRPG.Engine;
-// Command
-public interface IAction
-{
-    string Name {get;}
-    ConsoleKey Key {get;}
-    bool IsExecutable(GameEngine engine);
-    void Execute(GameEngine engine);
-}
-public class ChangeStateAction : IAction
-{
-    private readonly Func<IGameState> _stateFactory;
-    public string Name { get; }
-    public ConsoleKey Key { get; }
-
-    public ChangeStateAction(string name, ConsoleKey key, Func<IGameState> stateFactory)
-    {
-        Name = name;
-        Key = key;
-        _stateFactory = stateFactory;
-    }
-
-    public bool IsExecutable(GameEngine engine) => true;
-    public void Execute(GameEngine engine) => engine.ChangeState(_stateFactory());
-}
-
-\n===== ./Game/Actions/InventoryActions.cs =====\n
-using System;
-using ConsoleRPG.Engine;
-
-namespace ConsoleRPG.Engine;
-    public class InventoryMoveUp : IAction
-    {
-        private readonly InventoryState _state;
-        public InventoryMoveUp(InventoryState state) => _state = state;
-        public string Name => "Cursor Up";
-        public ConsoleKey Key => ConsoleKey.W;
-
-        public bool IsExecutable(GameEngine engine) => true;
-
-        public void Execute(GameEngine engine) => _state.MoveCursor(-1, engine.player.Inventory.Count);
-    }
-
-    public class InventoryMoveDown : IAction
-    {
-        private readonly InventoryState _state;
-        public InventoryMoveDown(InventoryState state) => _state = state;
-        public string Name => "Cursor Down";
-        public ConsoleKey Key => ConsoleKey.S;
-
-        public bool IsExecutable(GameEngine engine) => true;
-
-        public void Execute(GameEngine engine) => _state.MoveCursor(1, engine.player.Inventory.Count);
-    }
-
-    public class EquipLeftAction : IAction
-    {
-        private readonly InventoryState _state;
-        public EquipLeftAction(InventoryState state) => _state = state;
-        public string Name => "Equip Left";
-        public ConsoleKey Key => ConsoleKey.L;
-
-        public bool IsExecutable(GameEngine engine) => engine.player.Inventory.Count > 0;
-
-        public void Execute(GameEngine engine) => 
-            engine.player.Inventory[_state.InventoryCursor].EquipLeft(engine.player);
-    }
-
-    public class EquipRightAction : IAction
-    {
-        private readonly InventoryState _state;
-        public EquipRightAction(InventoryState state) => _state = state;
-        public string Name => "Equip Right";
-        public ConsoleKey Key => ConsoleKey.R;
-
-        public bool IsExecutable(GameEngine engine) => engine.player.Inventory.Count > 0;
-
-        public void Execute(GameEngine engine) => 
-            engine.player.Inventory[_state.InventoryCursor].EquipRight(engine.player);
-    }
-    public class UnequipRightAction : IAction
-    {
-        public string Name => "Unequip Right";
-        public ConsoleKey Key => ConsoleKey.D2;
-        public bool IsExecutable(GameEngine engine) => engine.player.RightHand != null;
-        public void Execute (GameEngine engine) => engine.player.UnequipRight();
-        
-    }
-    public class UnequipLeftAction : IAction
-    {
-        public string Name => "Unequip Left";
-        public ConsoleKey Key => ConsoleKey.D1;
-        public bool IsExecutable(GameEngine engine) => engine.player.LeftHand != null;
-        public void Execute (GameEngine engine) => engine.player.UnequipLeft();
-        
-    }
-
-
-    public class DropItemAction : IAction
-    {
-        private readonly InventoryState _state;
-        public DropItemAction(InventoryState state) => _state = state;
-        public string Name => "Drop Item";
-        public ConsoleKey Key => ConsoleKey.Q;
-
-        public bool IsExecutable(GameEngine engine) => engine.player.Inventory.Count > 0;
-
-        public void Execute(GameEngine engine)
-        {
-            var inv = engine.player.Inventory;
-            int idx = _state.InventoryCursor;
-
-            if (inv.Count == 0) return;
-
-            if (idx >= 0 && idx < inv.Count)
-            {
-                var item = inv[idx];
-                var cell = engine.map.GetCell(engine.player.X, engine.player.Y);
-                
-                item.Drop(engine.player, cell);
-
-                if (_state.InventoryCursor >= inv.Count && inv.Count > 0)
-                {
-                    _state.MoveCursor(-1, inv.Count);
-                }
-                else if (inv.Count == 0)
-                {
-                    _state.MoveCursor(0, 0); 
-                }
-            }
-        }
-    }
-\n===== ./Game/Actions/MapActions.cs =====\n
-using System;
-using ConsoleRPG.Engine;
-using ConsoleRPG.Combat;
-using ConsoleRPG.Entities;
-using ConsoleRPG.Log;
-namespace ConsoleRPG.Engine
-{
-    public abstract class MoveAction : IAction
-    {
-        public abstract string Name { get; }
-        public abstract ConsoleKey Key { get; }
-        protected abstract int DX { get; }
-        protected abstract int DY { get; }
-
-        public bool IsExecutable(GameEngine engine)
-        {
-            var targetCell = engine.map.GetCell(engine.player.X + DX, engine.player.Y + DY);
-            return targetCell != null && targetCell.Terrain.IsPassable();
-        }
-
-        public void Execute(GameEngine engine)
-        {
-            engine.player.Move(DX, DY, engine.map);
-            if (engine.player.Health <= 0)
-            {
-                GameLogger.GetInstance().Log("YOU ARE DEAD");
-                engine.Quit(); 
-            }
-        }
-    }
-
-    public class MoveUp : MoveAction {
-        public override string Name => "Move Up";
-        public override ConsoleKey Key => ConsoleKey.W;
-        protected override int DX => 0;
-        protected override int DY => -1;
-    }
-
-    public class MoveDown : MoveAction {
-        public override string Name => "Move Down";
-        public override ConsoleKey Key => ConsoleKey.S;
-        protected override int DX => 0;
-        protected override int DY => 1;
-    }
-
-    public class MoveLeft : MoveAction {
-        public override string Name => "Move Left";
-        public override ConsoleKey Key => ConsoleKey.A;
-        protected override int DX => -1;
-        protected override int DY => 0;
-    }
-
-    public class MoveRight : MoveAction {
-        public override string Name => "Move Right";
-        public override ConsoleKey Key => ConsoleKey.D;
-        protected override int DX => 1;
-        protected override int DY => 0;
-    }
-
-    public class PickUpAction : IAction
-    {
-        public string Name => "Pick Up Item";
-        public ConsoleKey Key => ConsoleKey.E;
-        
-        public bool IsExecutable(GameEngine engine) => 
-            engine.map.GetCell(engine.player.X, engine.player.Y).Items.Count > 0;
-
-        public void Execute(GameEngine engine) => engine.player.PickUp(engine.map);
-    }
-
-    public class SpecialAttackAction : IAction {
-    private readonly Func<Player, IAttackVisitor> _visitorFactory;
-    public string Name { get; }
-    public ConsoleKey Key { get; }
-
-    public SpecialAttackAction(string name, ConsoleKey key, Func<Player, IAttackVisitor> factory) {
-        Name = name; Key = key; _visitorFactory = factory;
-    }
-
-    public bool IsExecutable(GameEngine engine) {
-    int[] dx = { 0, 0, 0, -1, 1 };
-    int[] dy = { 0, -1, 1, 0, 0 };
-
-    for (int i = 0; i < 5; i++) {
-        var cell = engine.map.GetCell(engine.player.X + dx[i], engine.player.Y + dy[i]);
-        if (cell != null && cell.Enemy != null) return true;
-    }
-    return false;
-}
-
-public void Execute(GameEngine engine) {
-    int[] dx = { 0, 0, 0, -1, 1 };
-    int[] dy = { 0, -1, 1, 0, 0 };
-
-    for (int i = 0; i < 5; i++) {
-        var cell = engine.map.GetCell(engine.player.X + dx[i], engine.player.Y + dy[i]);
-        if (cell != null && cell.Enemy != null) {
-            var enemy = cell.Enemy;
-            engine.player.AttackEnemy(enemy, _visitorFactory(engine.player));
-            
-            if (enemy.Health <= 0) cell.Enemy = null;
-            return; 
-        }
-    }
-}
-}
-    public class QuitGame : IAction
-    {
-        public string Name => "Quit Game";
-        public ConsoleKey Key => ConsoleKey.Q;
-        public bool IsExecutable(GameEngine engine) => true;
-        public void Execute (GameEngine engine) => engine.Quit();  
-    }
-}\n===== ./Game/Actions/ActionManager.cs =====\n
-using ConsoleRPG.Engine;
-public class ActionManager
-{
-    private List<IAction> list = new List<IAction>();
-    public void AddAction(IAction action)
-    {
-        list.Add(action);
-    }
-    public IAction? FindAction(ConsoleKey key)
-    {
-        return list.FirstOrDefault(a => a.Key == key);
-    }
-    public IAction? FindActionByType<T>() where T : IAction
-    {
-        return list.FirstOrDefault(a => a is T);
-        
-    }
-    public List<IAction> GetAvailableActions(GameEngine engine)
-    {
-        return list.Where(a => a.IsExecutable(engine)).ToList();
-    }
-}
-
-\n===== ./Game/IGameState.cs =====\n
-using ConsoleRPG.Combat;
-using ConsoleRPG.Log;
-namespace ConsoleRPG.Engine;
-public interface IGameState
-{
-    public void Update(GameEngine engine, ConsoleKey key);
-    public void Draw(Renderer renderer, GameEngine engine);
-    ActionManager GetActionManager();
-    string GetPanelLine(int lineIndex, GameEngine engine);
-}
-
-public class MapState : IGameState
-{
-    private readonly ActionManager _actions;
-    public ActionManager GetActionManager() => _actions;
-    public List<IAction> GetActions(GameEngine engine) => _actions.GetAvailableActions(engine);
-    public MapState()
-    {
-        _actions = new ActionManager();
-        _actions.AddAction(new MoveUp());
-        _actions.AddAction(new MoveDown());
-        _actions.AddAction(new MoveLeft());
-        _actions.AddAction(new MoveRight());
-        _actions.AddAction(new PickUpAction());
-        _actions.AddAction(new QuitGame());
-        _actions.AddAction(new ChangeStateAction("Inventory", ConsoleKey.I, () => new InventoryState()));
-        _actions.AddAction(new ChangeStateAction("Help", ConsoleKey.H, () => new HelpState(this)));
-
-        _actions.AddAction(new SpecialAttackAction("Normal Attack", ConsoleKey.D1, p => new NormalAttack(p)));
-        _actions.AddAction(new SpecialAttackAction("Stealth Attack", ConsoleKey.D2, p => new StealthAttack(p)));
-        _actions.AddAction(new SpecialAttackAction("Magic Attack", ConsoleKey.D3, p => new MagicAttack(p)));
-        _actions.AddAction(new ChangeStateAction("Dziennik Zdarzeń", ConsoleKey.J, () => new LogHistoryState(this)));
-    }
-    public void Update(GameEngine engine, ConsoleKey key)
-    {
-        var action = _actions.FindAction(key);
-        if (action != null)
-        {
-            action.Execute(engine);
-            engine.ProcessEnemyTurn();
-        }
-        else
-        {
-            engine.ExcecuteAction(key); 
-        }
-    }
-
-    public void Draw(Renderer renderer, GameEngine engine)
-    {
-        renderer.DrawFrame(engine,this);
-        renderer.DrawLog();
-    }
-    public string GetPanelLine(int lineIndex, GameEngine engine)
-    {
-        return lineIndex switch
-        {
-            0 => "--- STATISTICS ---",
-                        1 => $"HP: {engine.player.Health} | Strength: {engine.player.Strength} | Dexterity: {engine.player.Dexterity}",
-                        2 => $"Luck: {engine.player.Luck} | Aggression: {engine.player.Aggression} | Wisdom: {engine.player.Wisdom}",
-                        3 => $"Coins: {engine.player.Coins} | Gold: {engine.player.Gold}",
-                        4 => "--- EQUIPMENT (Press I) ---",
-                        5 => $"Left arm:  {(engine.player.LeftHand != null ? engine.player.LeftHand.Name : "[Empty]")}",
-                        6 => $"Right arm: {(engine.player.RightHand != null ? engine.player.RightHand.Name : "[Empty]")}",
-                        7 => $"Damage:  {engine.player.GetTotalDamage()}",
-                        8 => "--- ENVIRONMENT ---",
-                        9 => engine.GetFloorInfo(),
-                        10 => "[H] Help",
-
-                        _ => ""
-        };
-    }
-}
-
-
-public class InventoryState : IGameState
-{
-    private readonly ActionManager _actions;
-    public ActionManager GetActionManager() => _actions;
-    public int InventoryCursor {get; private set;}
-    public List<IAction> GetActions(GameEngine engine) => _actions.GetAvailableActions(engine);
-    public InventoryState()
-    {
-        _actions = new ActionManager();
-        _actions.AddAction(new InventoryMoveUp(this));
-        _actions.AddAction(new InventoryMoveDown(this));
-        _actions.AddAction(new EquipLeftAction(this));
-        _actions.AddAction(new EquipRightAction(this));
-        _actions.AddAction(new DropItemAction(this));
-        _actions.AddAction(new UnequipLeftAction());
-        _actions.AddAction(new UnequipRightAction());
-        _actions.AddAction(new ChangeStateAction("Inventory", ConsoleKey.I, () => new MapState()));
-        _actions.AddAction(new ChangeStateAction("Help", ConsoleKey.H, () => new HelpState(this)));
-
-
-    }
-    public void Update(GameEngine engine, ConsoleKey key)
-    {
-         _actions.FindAction(key)?.Execute(engine);
-    }
-    public void MoveCursor(int delta, int maxItems)
-    {
-        InventoryCursor += delta;
-        if (InventoryCursor < 0) InventoryCursor = 0;
-        if (maxItems > 0 && InventoryCursor >= maxItems) InventoryCursor = maxItems - 1;
-    }
-    public void Draw(Renderer renderer, GameEngine engine)
-    {
-        renderer.DrawFrame(engine,this);
-        renderer.DrawLog();
-    }
-    public string GetPanelLine(int lineIndex, GameEngine engine)
-    {
-        if (lineIndex == 0) return "--- EQUIPMENT MODE ---";
-        int itemIdx = lineIndex - 2;
-        if (itemIdx >= 0 && itemIdx < engine.player.Inventory.Count)
-        {
-            string pointer = (itemIdx == InventoryCursor) ? "> " : "  ";
-            return $"{pointer}{engine.player.Inventory[itemIdx].Name}";
-        }
-        if (lineIndex == engine.player.Inventory.Count + 3 ) return "[H] Help";
-
-        return "";
-    }
-}
-
-public class HelpState : IGameState
-{
-    private readonly IGameState _previousState;
-    public HelpState(IGameState previousState)
-    {
-        _previousState = previousState;
-    }
-
-    public void Update(GameEngine engine, ConsoleKey key)
-    {
-        if (key == ConsoleKey.H || key == ConsoleKey.Escape)
-        {
-            engine.ChangeState(_previousState);
-        }
-    }
-
-    public void Draw(Renderer renderer, GameEngine engine)
-    {
-        renderer.DrawFrame(engine, this);
-        renderer.DrawLog();
-    }
-    public ActionManager GetActionManager() => _previousState.GetActionManager();
-    public string GetPanelLine(int lineIndex, GameEngine engine)
-    {
-        var actions = _previousState.GetActionManager().GetAvailableActions(engine);
-        if (lineIndex == 0) return "--- HELP ---";
-        int actionIdx = lineIndex - 2;
-        if (actionIdx >= 0 && actionIdx < actions.Count) 
-            return $"[{actions[actionIdx].Key}] {actions[actionIdx].Name}";
-        return "";
-    }
-}
-public class LogHistoryState : IGameState
-{
-    private readonly IGameState _previousState;
-
-    public LogHistoryState(IGameState previousState) => _previousState = previousState;
-
-    public void Update(GameEngine engine, ConsoleKey key)
-    {
-        if (key == ConsoleKey.J || key == ConsoleKey.Escape)
-            engine.ChangeState(_previousState);
-    }
-
-    public void Draw(Renderer renderer, GameEngine engine)
-    {
-        Console.Clear();
-        Console.WriteLine("=== HISTORIA ZDARZEŃ (Wciśnij J aby wrócić) ===");
-        var logs = GameLogger.GetInstance().GetAllLogs();
-        
-        int start = Math.Max(0, logs.Count - 20);
-        for (int i = start; i < logs.Count; i++)
-        {
-            Console.WriteLine(logs[i]);
-        }
-    }
-
-    public ActionManager GetActionManager() => _previousState.GetActionManager();
-    public string GetPanelLine(int lineIndex, GameEngine engine) => "";
-}\n===== ./Items/Decorators/ConcreteDecorators/UnluckyModifier.cs =====\n
+}\n===== ./MVC/Model/Items/Decorators/ConcreteDecorators/UnluckyModifier.cs =====\n
 using ConsoleRPG.Entities;
 using ConsoleRPG.Combat;
 using ConsoleRPG.World;
@@ -1464,7 +2199,7 @@ public class UnluckyModifier : ItemDecorator
     {
         _innerItem.Accept(visitor); 
     }
-}\n===== ./Items/Decorators/ConcreteDecorators/StrongModifier.cs =====\n
+}\n===== ./MVC/Model/Items/Decorators/ConcreteDecorators/StrongModifier.cs =====\n
 using ConsoleRPG.Entities;
 using ConsoleRPG.World;
 using ConsoleRPG.Combat;
@@ -1486,7 +2221,7 @@ public class StrongModifier : ItemDecorator
         _innerItem.Accept(visitor); 
         visitor.ResultDamage += 5; 
     }
-}\n===== ./Items/Decorators/ItemDecorator.cs =====\n
+}\n===== ./MVC/Model/Items/Decorators/ItemDecorator.cs =====\n
 using ConsoleRPG.Entities;
 using ConsoleRPG.World;
 using ConsoleRPG.Combat;
@@ -1512,7 +2247,7 @@ public abstract class ItemDecorator : Item
     public override void EquipLeft(Player p) => _innerItem.EquipLeft(p, this);
     public override void EquipRight(Player p) => _innerItem.EquipRight(p, this);
     public override void UnEquip(Player p) => _innerItem.UnEquip(p, this);
-}\n===== ./Items/Decorators/ModifierApplier.cs =====\n
+}\n===== ./MVC/Model/Items/Decorators/ModifierApplier.cs =====\n
 using ConsoleRPG.World;
 
 namespace ConsoleRPG.Items;
@@ -1529,7 +2264,7 @@ public static class ModifierApplier {
         return randomFunc(item);
     }
 
-}\n===== ./Items/Base/ConcreteComponents/Weapons.cs =====\n
+}\n===== ./MVC/Model/Items/Base/ConcreteComponents/Weapons.cs =====\n
 using ConsoleRPG.Entities;
 using ConsoleRPG.Combat;
 using ConsoleRPG.Log;
@@ -1650,7 +2385,7 @@ public class MagicStaff : MagicWeapon {
     public override char Symbol => '∫'; 
     public override string Name => "Magic Staff"; 
     public MagicStaff() { damage = 4; } 
-}\n===== ./Items/Base/ConcreteComponents/ThemeSpecificItems.cs =====\n
+}\n===== ./MVC/Model/Items/Base/ConcreteComponents/ThemeSpecificItems.cs =====\n
 
 using ConsoleRPG.Combat;
 
@@ -1674,12 +2409,12 @@ public class Blaster : MagicWeapon {
 public class LuckyCoinPouch : HeavyWeapon { 
     public override char Symbol => '$'; public override string Name => "Szczęśliwa Sakwa Monet"; 
     public LuckyCoinPouch() { damage = 12; } 
-}\n===== ./Items/Base/ConcreteComponents/Garbage.cs =====\n
+}\n===== ./MVC/Model/Items/Base/ConcreteComponents/Garbage.cs =====\n
 namespace ConsoleRPG.Items;
 
 public class Bone : Item { public override char Symbol => 'B'; public override string Name => "Bone";}
 public class Mug : Item { public override char Symbol => 'U'; public override string Name => "Old Cup"; }
-public class Rope : Item { public override char Symbol => '~'; public override string Name => "Rope"; }\n===== ./Items/Base/ConcreteComponents/Currencies.cs =====\n
+public class Rope : Item { public override char Symbol => '~'; public override string Name => "Rope"; }\n===== ./MVC/Model/Items/Base/ConcreteComponents/Currencies.cs =====\n
 using ConsoleRPG.Entities;
 using ConsoleRPG.World;
 using ConsoleRPG.Log;
@@ -1718,7 +2453,7 @@ public class Gold : Currency
         GameLogger.GetInstance().Log("Picked up a gold bar");
     }
 }
-\n===== ./Items/Base/Item.cs =====\n
+\n===== ./MVC/Model/Items/Base/Item.cs =====\n
 using ConsoleRPG.World;
 using ConsoleRPG.Entities;
 using ConsoleRPG.Log;
@@ -1787,121 +2522,23 @@ public abstract class Item
     }
 
 }
-
-
-
-\n===== ./Systems/EnemySystem.cs =====\n
-using ConsoleRPG.World;
-using ConsoleRPG.Entities;
-using System.Collections.Generic;
-
-namespace ConsoleRPG.Systems
+// В файле Items/Item.cs или другом месте:
+public class GenericItem : Item 
 {
-    public class EnemySystem
-    {
-        public void ProcessTurn(Map map)
-        {
-            List<Enemy> allEnemies = new List<Enemy>();
-            for (int x = 0; x < map.Width; x++)
-            {
-                for (int y = 0; y < map.Height; y++)
-                {
-                    if (map.GetCell(x, y).Enemy != null)
-                    {
-                        allEnemies.Add(map.GetCell(x, y).Enemy);
-                    }
-                }
-            }
-
-            foreach (var enemy in allEnemies)
-            {
-                enemy.MoveRandomly(map);
-            }
-        }
-    }
-}\n===== ./Logging/FileAndMemoryLogger.cs =====\n
-namespace ConsoleRPG.Log;
-public class FileAndMemoryLogger : ILogger
-{
-    private readonly List<string> _logs = new List<string>();
-    private readonly string _filePath;
-
-    public FileAndMemoryLogger(string playerName, string configPath)
-    {
-        if (!Directory.Exists(configPath))
-        {
-            Directory.CreateDirectory(configPath);
-        }
-        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        _filePath = Path.Combine(configPath, $"{playerName}_{timestamp}_log.txt");
-        
-        Log("=== Rozpoczęto nową grę ===");
-    }
-
-    public void Log(string message)
-    {
-        string entry = $"[{DateTime.Now:HH:mm:ss}] {message}";
-        _logs.Add(entry);
-
-        try { File.AppendAllText(_filePath, entry + Environment.NewLine); } 
-        catch { }
-    }
-
-    public List<string> GetAllLogs() => _logs;
+    public override char Symbol { get; }
+    public override string Name { get; }
     
-    public string GetLastLog() => _logs.Count > 0 ? _logs[^1] : "Brak zdarzeń.";
-    
-    public string GetLogFilePath() => _filePath;
-}\n===== ./Logging/ILogger.cs =====\n
-namespace ConsoleRPG.Log;
-public interface ILogger
-{
-    void Log(string message);
-    List<string> GetAllLogs();
-    string GetLastLog();
-    string GetLogFilePath();
+    public GenericItem(string name, char symbol) 
+    {
+        Name = name;
+        Symbol = symbol;
+    }
+    // Реализуйте необходимые методы, если они абстрактные
 }
 
-public class FileLogger : ILogger
-{
-    private string _filePath;
-    public FileLogger(string playerName, string configPath) {
-        if (!Directory.Exists(configPath))
-        {
-            Directory.CreateDirectory(configPath);
-        }
-        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        _filePath = Path.Combine(configPath, $"{playerName}_{timestamp}_log.txt");
-     
-    }
-    public void Log(string message) => File.AppendAllText(_filePath, message + "\n");
-    public string GetLastLog() => "Zapisano do pliku"; 
-    public List<string> GetAllLogs() => new List<string> { "Logi w pliku: " + _filePath };
-    public string GetLogFilePath() => _filePath;
-}
 
-public class ConsoleLogger : ILogger
-{
-    public void Log(string message) => Console.WriteLine($"[LOG]: {message}");
-    public string GetLastLog() => "Wyświetlono в konsoli";
-    public List<string> GetAllLogs() => new List<string> { "Tylko podgląd konsoli" };
-    public string GetLogFilePath() => "BRAK (Konsola)";
-}\n===== ./Logging/GameLogger.cs =====\n
-namespace ConsoleRPG.Log;
-public class GameLogger
-{
-    private static ILogger _instance;
 
-    private GameLogger() { }
-    public static ILogger GetInstance(string name = "Player", string path = "./")
-    {
-        if (_instance == null)
-        {
-            _instance = new FileAndMemoryLogger(name,path);
-        }
-        return _instance;
-    }
-}\n===== ./Player/Enemy.cs =====\n
+\n===== ./MVC/Model/Player/Enemy.cs =====\n
 using ConsoleRPG.Entities.Observers;
 using ConsoleRPG.Log;
 using ConsoleRPG.World;
@@ -1999,7 +2636,18 @@ public class Skeleton : Enemy
         this.AttackValue += 8 ;
         GameLogger.GetInstance().Log($"Skeleton is in furror. His AttackValue encreased up to {AttackValue}");
     }
-}\n===== ./Player/Player.cs =====\n
+}
+
+public class SimpleEnemy : Enemy 
+{
+    public SimpleEnemy(string name, char symbol, int x, int y, int hp, int attack, int armor) 
+        : base(name, symbol, x, y, hp, attack, armor) { }
+        public override void MemberDied(string name)
+    {
+        this.AttackValue += 0 ;
+        GameLogger.GetInstance().Log($"Skeleton is in furror. His AttackValue encreased up to {AttackValue}");
+    }
+}\n===== ./MVC/Model/Player/Player.cs =====\n
 using System.Security.Cryptography.X509Certificates;
 using ConsoleRPG.Engine;
 using ConsoleRPG.Items;
@@ -2116,12 +2764,12 @@ public class Player : Entity
     {
         item.Drop(this,map.GetCell(X,Y));
     }
-}\n===== ./Player/Observers/SoundObserver/IEventListener.cs =====\n
+}\n===== ./MVC/Model/Player/Observers/SoundObserver/IEventListener.cs =====\n
 namespace ConsoleRPG.Entities.Observers;
 public interface IEventListenerSound
 {
     void SoundProduced(int dist, int sourceX, int sourceY);
-}\n===== ./Player/Observers/SoundObserver/EventManager.cs =====\n
+}\n===== ./MVC/Model/Player/Observers/SoundObserver/EventManager.cs =====\n
 using ConsoleRPG.World;
 
 namespace ConsoleRPG.Entities.Observers;
@@ -2182,12 +2830,12 @@ public class EventManagerSound
         }
         return listenersInRange;
     }
-}\n===== ./Player/Observers/EnemyDeathObserver/IEventListener.cs =====\n
+}\n===== ./MVC/Model/Player/Observers/EnemyDeathObserver/IEventListener.cs =====\n
 namespace ConsoleRPG.Entities.Observers;
 public interface IEventListenerDeath
 {
     void MemberDied(string name);
-}\n===== ./Player/Observers/EnemyDeathObserver/EventManager.cs =====\n
+}\n===== ./MVC/Model/Player/Observers/EnemyDeathObserver/EventManager.cs =====\n
 namespace ConsoleRPG.Entities.Observers;
 public class EventManagerDeath
 {
@@ -2206,11 +2854,11 @@ public class EventManagerDeath
     }
 
 
-}\n===== ./Player/Entity.cs =====\n
+}\n===== ./MVC/Model/Player/Entity.cs =====\n
 namespace ConsoleRPG.Entities;
 public abstract class Entity
 {
-    public string Name { get; }
+    public string Name { get; set;}
     public char Symbol { get; }
     public int X {get;  set;}
     public int Y {get;  set;}
@@ -2227,62 +2875,297 @@ public abstract class Entity
     }
     public virtual void TakeDamage (int damage) => Health -= int.Max(0, damage);
     public bool IsDead => Health <= 0;
-} \n===== ./Program.cs =====\n
-﻿using System;
+} \n===== ./MVC/View/ConsoleView.cs =====\n
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using ConsoleRPG.Entities;
 using ConsoleRPG.Engine;
-using ConsoleRPG.Config;
+using ConsoleRPG.World;
 using ConsoleRPG.Log;
+
+namespace ConsoleRPG.MVC.View
+{
+    public class ConsoleView : IGameView
+    {
+        private Map _map;
+        private Dictionary<int, Player> _players; // Храним всех игроков
+
+        public ConsoleView(Map map, Dictionary<int, Player> players)
+        {
+            _map = map;
+            _players = players;
+        }
+
+        public void DrawFrame(GameEngine engine, IGameState currentState)
+        {
+            Console.SetCursorPosition(0, 0);
+            StringBuilder screen = new StringBuilder();
+
+            for (int y = 0; y < _map.Height; y++)
+            {
+                for (int x = 0; x < _map.Width; x++)
+                {
+                    // 1. Ищем, стоит ли на этих координатах (x,y) какой-нибудь игрок
+                    Player? foundPlayer = null;
+                    int foundPlayerId = 0;
+
+                    foreach (var pair in _players)
+                    {
+                        if (pair.Value.X == x && pair.Value.Y == y)
+                        {
+                            foundPlayerId = pair.Key;
+                            foundPlayer = pair.Value;
+                            break; // Игрок найден, дальше искать не нужно
+                        }
+                    }
+
+                    // 2. Если игрок найден — рисуем его ID (например, '1' или '2')
+                    if (foundPlayer != null)
+                    {
+                        screen.Append(foundPlayerId.ToString()); 
+                    }
+                    else
+                    {
+                       var cell = _map.GetCell(x, y);
+                        if (cell != null && cell.Items.Count > 0)
+                        {
+                            // Берем символ последнего предмета в списке
+                            screen.Append(cell.Items.Last().Symbol); 
+                        }
+                        else
+                        {
+                            // Если нет ни игрока, ни предметов — рисуем ландшафт
+                            screen.Append(cell?.GetDrawSymbol() ?? '#');
+                        }
+                }
+                }
+
+                screen.Append("   | ");
+                
+                string line = currentState.GetPanelLine(y, engine);
+                screen.Append(line.PadRight(50)); 
+                
+                screen.AppendLine();
+            }
+            
+            Console.Write(screen.ToString());
+        }
+
+        public void DrawLog()
+        {
+            // Обрати внимание: теперь тут _map вместо map
+            int logLine = _map.Height + 1; 
+            
+            Console.SetCursorPosition(0, logLine);
+            Console.Write(new string(' ', Console.WindowWidth)); 
+            
+            Console.SetCursorPosition(0, logLine);
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.WriteLine($"> {GameLogger.GetInstance().GetLastLog()}");
+            Console.ResetColor();
+        }
+
+        public void DrawHistory(List<string> logs)
+        {
+            Console.Clear();
+            Console.WriteLine("=== HISTORIA ZDARZEŃ (Wciśnij J aby wrócić) ===");
+            
+            int start = Math.Max(0, logs.Count - 20);
+            for (int i = start; i < logs.Count; i++)
+            {
+                Console.WriteLine(logs[i]);
+            }
+        }
+    }
+}\n===== ./MVC/View/IGameView.cs =====\n
+using ConsoleRPG.Engine;
+namespace ConsoleRPG.MVC.View;
+public interface IGameView
+{
+    public void DrawFrame(GameEngine engine, IGameState currentState);
+    public void DrawLog();
+    public void DrawHistory(List<string> logs);
+}\n===== ./MVC/View/NetworkView.cs =====\n
+using System;
+using ConsoleRPG.Network;
+
+namespace ConsoleRPG.Views
+{
+    public class NetworkView
+    {
+        private readonly object _consoleLock = new object();
+
+        public void Render(GameStateDto state)
+        {
+            lock (_consoleLock)
+            {
+                Console.SetCursorPosition(0, 0);
+                
+                Console.WriteLine("==========================================================================");
+                Console.WriteLine($"                 CONSOLE RPG MULTIPLAYER - TWÓJ NUMER: {state.PlayerId} ");
+                Console.WriteLine("==========================================================================");
+
+                Console.WriteLine("\n[WIDOK MAPY LOCHU]");
+                foreach (var row in state.GridRows)
+                {
+                    Console.WriteLine(row);
+                }
+
+                Console.WriteLine("\n[STATYSTYKI TWOJEGO BOHATERA]");
+                var stats = state.PlayerStats;
+                Console.WriteLine($"HP: {stats.Health} | Złoto: {stats.Gold} | Monety: {stats.Coins}");
+                Console.WriteLine($"Siła: {stats.Strength} | Zręczność: {stats.Dexterity} | Szczęście: {stats.Luck} | Agresja: {stats.Aggression} | Mądrość: {stats.Wisdom}");
+                Console.WriteLine($"Broń (Prawa ręka): {stats.RightHandItem} | Tarcza/Przedmiot (Lewa ręka): {stats.LeftHandItem}");
+                Console.WriteLine($"Liczba przedmiotów w plecaku (Inventory): {stats.InventoryCount}");
+
+                Console.WriteLine("\n[DZIENNIK ZDARZEŃ I ROZCHODZENIA SIĘ DŹWIĘKU]");
+                foreach (var log in state.RecentLogs)
+                {
+                    Console.WriteLine(log);
+                }
+                Console.WriteLine("==========================================================================");
+                Console.Write("Ruch: W, A, S, D | Podnoszenie: E | Atak: J. Wykonaj akcję: ");
+            }
+        }
+    }
+}\n===== ./Config/GameManager.cs =====\n
+using System.Text.Json;
+using ConsoleRPG.World;
+namespace ConsoleRPG.Config;
+public static class ConfigManager
+{
+    private const string _configFilePath = "config.json";
+    public static GameConfig LoadConfig()
+    {
+        var options = new JsonSerializerOptions 
+        { 
+            PropertyNameCaseInsensitive = true,
+            WriteIndented = true 
+        };
+        if (!File.Exists(_configFilePath))
+        {
+            var defaultConfig = new GameConfig();
+            string json = JsonSerializer.Serialize(defaultConfig, options);
+            File.WriteAllText(_configFilePath,json);
+        }
+        
+
+        string jsonString = File.ReadAllText(_configFilePath);
+        try
+        {
+            return JsonSerializer.Deserialize<GameConfig>(jsonString, options) ?? new GameConfig();
+        }
+        catch
+        {
+            return new GameConfig();
+        }
+    }
+}\n===== ./Config/GameConfig.cs =====\n
+using ConsoleRPG.World;
+namespace ConsoleRPG.Config;
+public class GameConfig
+{
+    public string PlayerName { get; set; } = "Anna";
+    public string Theme { get; set; } = "Vault"; 
+    public string FileName { get; set; } = "./log";
+}\n===== ./ConsoleRPG_1.csproj =====\n
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
+\n===== ./Program.cs =====\n
+﻿using System;
+using System.Threading.Tasks;
+using ConsoleRPG.Networking;
+using ConsoleRPG.Controllers;
 
 namespace ConsoleRPG
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            Console.Clear(); 
-            Console.CursorVisible = false;
-            Console.Title = "OOP Console RPG - Stage 2";
-            
-            ShowIntro();
-            GameConfig config = ConfigManager.LoadConfig();
-            GameEngine engine = new GameEngine(config);
-            
-            engine.Run();
-            if (engine.player.IsDead)
+            string systemMode = "";
+            int operationalPort = 5555;
+            string remoteIpTarget = "127.0.0.1";
+
+            if (args.Length > 0)
+            {
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (args[i] == "--server")
+                    {
+                        systemMode = "SERVER";
+                        if (i + 1 < args.Length && int.TryParse(args[i + 1], out int extractedPort))
+                        {
+                            operationalPort = extractedPort;
+                        }
+                    }
+                    else if (args[i] == "--client")
+                    {
+                        systemMode = "CLIENT";
+                        if (i + 1 < args.Length)
+                        {
+                            string[] connectionSegments = args[i + 1].Split(':');
+                            remoteIpTarget = connectionSegments[0];
+                            if (connectionSegments.Length > 1 && int.TryParse(connectionSegments[1], out int extractedPort))
+                            {
+                                operationalPort = extractedPort;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(systemMode))
             {
                 Console.Clear();
-                Console.WriteLine("==============================================");
-                Console.WriteLine("                  GAME OVER                   ");
-                Console.WriteLine("==============================================");
-                Console.WriteLine("\nTwoja postać poległa w walce.");
-                Console.WriteLine($"\nZapisano dziennik zdarzeń w pliku:\n{GameLogger.GetInstance().GetLogFilePath()}");
-                Console.WriteLine("\nNaciśnij dowolny klawisz, aby wyjść...");
-                Console.ReadKey(true);
+                Console.WriteLine("==========================================================================");
+                Console.WriteLine("                    GRA RPG - REFAKTORYZACJA SIECIOWA                     ");
+                Console.WriteLine("==========================================================================");
+                Console.Write("Wybierz tryb działania aplikacji -> (S)erwer / (K)lient: ");
+                
+                ConsoleKey pressedKey = Console.ReadKey(true).Key;
+                Console.WriteLine();
+                
+                if (pressedKey == ConsoleKey.S) systemMode = "SERVER";
+                else if (pressedKey == ConsoleKey.K) systemMode = "CLIENT";
+                else
+                {
+                    Console.WriteLine("[BŁĄD] Wybrano nieobsługiwany klawisz wyboru. Zamykanie programu.");
+                    return;
+                }
+            }
+
+            if (systemMode == "SERVER")
+            {
+                GameServer server = new GameServer(operationalPort);
+                server.StartServer();
+
+                Console.WriteLine("[INFO] Serwer działa w tle. Naciśnij klawisz [ESC], aby zamknąć aplikację serwera.");
+                while (true)
+                {
+                    if (Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape)
+                    {
+                        server.TerminateServer();
+                        break;
+                    }
+                    await Task.Delay(250);
+                }
+            }
+            else if (systemMode == "CLIENT")
+            {
+                GameClient client = new GameClient(remoteIpTarget, operationalPort);
+                await client.RunClientAsync();
             }
         }
-    
-
-
-    static void ShowIntro()
-    {
-        Console.Clear();
-
-        Console.WriteLine("==============================================");
-        Console.WriteLine("               CONSOLE RPG                    ");
-        Console.WriteLine("==============================================");
-        Console.WriteLine();
-        Console.WriteLine("Witaj, wędrowcze.");
-        Console.WriteLine("Przed Tobą mroczne korytarze, porzucone przedmioty");
-        Console.WriteLine("i broń, która może zwiększyć Twoją siłę.");
-        Console.WriteLine();
-        Console.WriteLine("Twoim zadaniem jest przemierzać loch,");
-        Console.WriteLine("zbierać przedmioty, zakładać ekwipunek");
-        Console.WriteLine("i przetrwać jak najdłużej.");
-        Console.WriteLine();
-        Console.WriteLine("Naciśnij dowolny klawisz, aby rozpocząć przygodę...");
-            
-        Console.ReadKey(true);
-        Console.Clear();
-    }
     }
 }

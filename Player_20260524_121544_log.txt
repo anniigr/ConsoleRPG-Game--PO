@@ -1,0 +1,2 @@
+[12:15:44] === Rozpoczęto nową grę ===
+[12:15:44] [12:15:11] The player is moved

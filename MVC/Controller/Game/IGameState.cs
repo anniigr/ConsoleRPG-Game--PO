@@ -1,10 +1,11 @@
 using ConsoleRPG.Combat;
 using ConsoleRPG.Log;
+using ConsoleRPG.MVC.View;
 namespace ConsoleRPG.Engine;
 public interface IGameState
 {
     public void Update(GameEngine engine, ConsoleKey key);
-    public void Draw(Renderer renderer, GameEngine engine);
+    public void Draw(IGameView view, GameEngine engine);
     ActionManager GetActionManager();
     string GetPanelLine(int lineIndex, GameEngine engine);
 }
@@ -45,10 +46,10 @@ public class MapState : IGameState
         }
     }
 
-    public void Draw(Renderer renderer, GameEngine engine)
+    public void Draw(IGameView view, GameEngine engine)
     {
-        renderer.DrawFrame(engine,this);
-        renderer.DrawLog();
+        view.DrawFrame(engine,this);
+        view.DrawLog();
     }
     public string GetPanelLine(int lineIndex, GameEngine engine)
     {
@@ -103,10 +104,10 @@ public class InventoryState : IGameState
         if (InventoryCursor < 0) InventoryCursor = 0;
         if (maxItems > 0 && InventoryCursor >= maxItems) InventoryCursor = maxItems - 1;
     }
-    public void Draw(Renderer renderer, GameEngine engine)
+    public void Draw(IGameView view, GameEngine engine)
     {
-        renderer.DrawFrame(engine,this);
-        renderer.DrawLog();
+        view.DrawFrame(engine,this);
+        view.DrawLog();
     }
     public string GetPanelLine(int lineIndex, GameEngine engine)
     {
@@ -139,10 +140,10 @@ public class HelpState : IGameState
         }
     }
 
-    public void Draw(Renderer renderer, GameEngine engine)
+    public void Draw(IGameView view, GameEngine engine)
     {
-        renderer.DrawFrame(engine, this);
-        renderer.DrawLog();
+        view.DrawFrame(engine, this);
+        view.DrawLog();
     }
     public ActionManager GetActionManager() => _previousState.GetActionManager();
     public string GetPanelLine(int lineIndex, GameEngine engine)
@@ -167,17 +168,10 @@ public class LogHistoryState : IGameState
             engine.ChangeState(_previousState);
     }
 
-    public void Draw(Renderer renderer, GameEngine engine)
+    public void Draw(IGameView view, GameEngine engine)
     {
-        Console.Clear();
-        Console.WriteLine("=== HISTORIA ZDARZEŃ (Wciśnij J aby wrócić) ===");
         var logs = GameLogger.GetInstance().GetAllLogs();
-        
-        int start = Math.Max(0, logs.Count - 20);
-        for (int i = start; i < logs.Count; i++)
-        {
-            Console.WriteLine(logs[i]);
-        }
+        view.DrawHistory(logs);
     }
 
     public ActionManager GetActionManager() => _previousState.GetActionManager();

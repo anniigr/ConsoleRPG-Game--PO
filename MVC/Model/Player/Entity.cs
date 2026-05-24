@@ -1,7 +1,7 @@
 namespace ConsoleRPG.Entities;
 public abstract class Entity
 {
-    public string Name { get; }
+    public string Name { get; set;}
     public char Symbol { get; }
     public int X {get;  set;}
     public int Y {get;  set;}

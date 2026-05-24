@@ -1,0 +1,13 @@
+[12:10:09] === Rozpoczęto nową grę ===
+[12:10:09] [12:09:55] The player is moved
+[12:10:09] [12:10:09] The player is moved
+[12:10:11] [12:10:11] The player is moved
+[12:10:12] [12:10:12] The player is moved
+[12:10:13] [12:10:13] The player is moved
+[12:10:15] [12:10:15] The player is moved
+[12:10:16] [12:10:16] The player is moved
+[12:10:17] [12:10:17] The player is moved
+[12:10:36] [12:10:36] The player is moved
+[12:10:37] [12:10:37] The player is moved
+[12:10:38] [12:10:38] The player is moved
+[12:10:39] [12:10:39] The player is moved

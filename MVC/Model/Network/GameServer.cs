@@ -28,7 +28,7 @@ namespace ConsoleRPG.Networking
             _listener = new TcpListener(IPAddress.Any, _port);
             
             // Инициализируем главный серверный движок с оригинальной картой
-            GameConfig config = new GameConfig();
+            GameConfig config = ConfigManager.LoadConfig();
             _engine = new GameEngine(config, isServer: true);
         }
 
@@ -63,7 +63,9 @@ namespace ConsoleRPG.Networking
                             spawnX++;
                         }
 
-                        _engine.players[id] = new Player(spawnX, spawnY) { Name = $"Gracz {id}" };
+                        var newPlayer = new Player(spawnX, spawnY) { Name = $"Gracz {id}", Id = id };
+                        _engine.map.soundManager.Subscribe(newPlayer); // <-- Подписываем игрока на звуки карты
+                        _engine.players[id] = newPlayer;
 
                         Task.Run(() => HandleClientAsync(id, client));
                         
@@ -117,7 +119,13 @@ namespace ConsoleRPG.Networking
                         lock (_lock)
                         {
                             _engine.ExecuteActionForPlayer(id, key);
-                            _engine.ProcessEnemyTurn();
+                            if (_engine.players.ContainsKey(id) && _engine.players[id].IsDead)
+                            {
+                                var deathMsg = new NetworkMessage { Type = "DEATH", Payload = "Zginąłeś w lochach!" };
+                                var deathWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
+                                deathWriter.WriteLine(JsonSerializer.Serialize(deathMsg));
+                                break; // Выходим из цикла чтения, что приведет к блоку finally и отключению
+                            }
                         }
                         BroadcastState();
                     }
@@ -128,8 +136,12 @@ namespace ConsoleRPG.Networking
             {
                 lock (_lock)
                 {
+                    if (_engine.players.ContainsKey(id))
+                    {
+                        _engine.map.soundManager.Unsubscribe(_engine.players[id]); // <-- Обязательно отписываем
+                        _engine.players.Remove(id);
+                    }
                     _clients.Remove(id);
-                    _engine.players.Remove(id);
                     client.Close();
                 }
                 BroadcastState();
@@ -145,9 +157,9 @@ namespace ConsoleRPG.Networking
                 if (!client.Connected) continue;
 
                 var updateDto = new GameUpdateDto { YourPlayerId = id };
-                updateDto.LastLog = GameLogger.GetInstance().GetLastLog();
+                updateDto.NewLogs = GameLogger.GetInstance().ExtractMergedLogs(id);
+                updateDto.LastLog = updateDto.NewLogs.Count > 0 ? updateDto.NewLogs[^1] : "Brak zdarzeń.";
 
-                // Собираем игроков
                 foreach (var p in _engine.players)
                 {
                     updateDto.Players.Add(new PlayerDto { 

@@ -6,3 +6,4 @@ log/
 *.suo
 *.cache
 .DS_Store
+*.txt

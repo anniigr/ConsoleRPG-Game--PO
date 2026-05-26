@@ -58,6 +58,7 @@ namespace ConsoleRPG.Network
         public List<EnemyDto> Enemies { get; set; } = new List<EnemyDto>();
         public List<ItemDto> Items { get; set; } = new List<ItemDto>();
         public string LastLog { get; set; } = string.Empty;
+        public List<string> NewLogs { get; set; } = new List<string>();
     }
     public class PlayerStatsDto
     {

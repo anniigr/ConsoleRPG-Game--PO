@@ -8,7 +8,7 @@ using ConsoleRPG.Entities.Observers;
 namespace ConsoleRPG.Entities;
 
 // Reciever
-public class Player : Entity
+public class Player : Entity,IEventListenerSound
 {
     
     public int Strength { get; set; } = 10;
@@ -19,6 +19,7 @@ public class Player : Entity
 
     public int Coins {get; set;}
     public int Gold {get; set;}
+    public int Id { get; set; }
 
     public Item? LeftHand {get; set;} = null;
     public Item? RightHand {get;set;} = null;
@@ -113,5 +114,10 @@ public class Player : Entity
     public void DropItem(Item item, Map map)
     {
         item.Drop(this,map.GetCell(X,Y));
+    }
+    public void SoundProduced(int dist, int sourceX, int sourceY)
+    {
+        // Теперь мы можем отправить лог конкретно этому игроку!
+        GameLogger.GetInstance().LogToSpecificPlayer(this.Id, $"[SŁUCH] {this.Name} słyszy hałas z odległości {dist} pól!");
     }
 }

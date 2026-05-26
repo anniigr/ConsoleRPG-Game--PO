@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using ConsoleRPG.Networking;
-using ConsoleRPG.Controllers;
 
 namespace ConsoleRPG
 {

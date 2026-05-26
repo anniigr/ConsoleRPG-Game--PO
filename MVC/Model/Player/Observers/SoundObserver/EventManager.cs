@@ -32,10 +32,12 @@ public class EventManagerSound
             (int x,int y, dist) = queue.Dequeue();
             if (dist > range) continue;
 
-            Enemy enemy = map.GetCell(x,y).Enemy ;
-            if( enemy != null && _listeners.Contains(enemy))
+            foreach (var listener in _listeners)
             {
-                listenersInRange.Add((enemy,dist));
+                if (listener is Entity entity && entity.X == x && entity.Y == y)
+                {
+                    listenersInRange.Add((listener, dist));
+                }
             }
 
 

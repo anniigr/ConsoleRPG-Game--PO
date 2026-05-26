@@ -24,7 +24,7 @@ namespace ConsoleRPG.Networking
             _port = port;
             
             // Локальный движок-пустышка для клиента, карту загрузим из сети
-            GameConfig config = new GameConfig();
+            GameConfig config = ConfigManager.LoadConfig();
             _engine = new GameEngine(config, isServer: false);
         }
 
@@ -81,6 +81,14 @@ namespace ConsoleRPG.Networking
                             _engine.SyncFromServer(updateData);
                         }
                     }
+                    else if (msg.Type == "DEATH") // ДОБАВЛЕНО
+                    {
+                        Console.Clear();
+                        Console.WriteLine("\n=== GAME OVER ===");
+                        Console.WriteLine(msg.Payload);
+                        _isActive = false;
+                        break;
+                    }
                 }
                 catch
                 {
@@ -101,11 +109,15 @@ namespace ConsoleRPG.Networking
                 if (Console.KeyAvailable)
                 {
                     ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-                    if (_engine.playerId != 0) 
+                    ConsoleKey key = keyInfo.Key;
+
+                    // Локальные UI-кнопки (Инвентарь, Логи, Помощь, Экипировка)
+                    if (key == ConsoleKey.I || key == ConsoleKey.J || key == ConsoleKey.H || key == ConsoleKey.Escape)
                     {
-                        _engine.ExecuteActionForPlayer(_engine.playerId, keyInfo.Key);
+                        if (_engine.playerId != 0) 
+                            _engine.ExecuteActionForPlayer(_engine.playerId, key);
                     }
-                    var msg = new NetworkMessage { Type = "INPUT", Payload = keyInfo.Key.ToString() };
+                   var msg = new NetworkMessage { Type = "INPUT", Payload = key.ToString() };
                     try
                     {
                         writer.WriteLine(JsonSerializer.Serialize(msg));

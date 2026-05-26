@@ -1,2 +1,0 @@
-[14:09:16] === Rozpoczęto nową grę ===
-[14:09:16] [14:09:10] [LOG] Map builded.

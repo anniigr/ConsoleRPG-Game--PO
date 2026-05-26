@@ -1,7 +1,0 @@
-[12:30:31] === Rozpoczęto nową grę ===
-[12:30:31] [12:30:22] [LOG] Map builded.
-[12:30:41] The player is moved
-[12:30:41] [12:30:41] The player is moved
-[12:30:42] The player is moved
-[12:30:42] [12:30:42] The player is moved
-[12:30:42] The player is moved

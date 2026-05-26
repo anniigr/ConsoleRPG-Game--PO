@@ -120,19 +120,19 @@ namespace ConsoleRPG.Engine
             {
                 if (!players.ContainsKey(id)) return;
                 this.playerId = id; // Переключаем контекст выполнения на этого игрока
+                GameLogger.GetInstance().CurrentPlayerId = id;
 
                 if (isServer)
                 {
                     if (!_playerStates.ContainsKey(id)) _playerStates[id] = new MapState();
                     _currentState = _playerStates[id];
                 }
-                var action = _currentState.GetActionManager().FindAction(key);
-                if (action != null && action.IsExecutable(this))
-                {
-                    action.Execute(this);
-                }
+                _currentState.Update(this, key);
+
                 if (isServer) _playerStates[id] = _currentState; // Сохраняем состояние на сервере
-                else _currentState.Draw(_view, this);}
+                else _currentState.Draw(_view, this);
+                GameLogger.GetInstance().CurrentPlayerId = 0;
+                }
         }
 
         public void LoadMapFromServer(ConnectionInitDto init)
@@ -153,11 +153,11 @@ namespace ConsoleRPG.Engine
         public void SyncFromServer(GameUpdateDto update)
         {
             this.playerId = update.YourPlayerId;
-            if (!string.IsNullOrEmpty(update.LastLog) && _lastReceivedLog != update.LastLog)
+            if (update.NewLogs != null)
             {
-                _lastReceivedLog = update.LastLog;
-                // Записываем серверное событие в локальный лог клиента, чтобы View его отрисовал
-                GameLogger.GetInstance().Log(update.LastLog); 
+                // Теперь клиент просто перезаписывает свою историю тем, 
+                // что прислал сервер, а не спамит дубликатами.
+                GameLogger.GetInstance().SetLogs(update.NewLogs);
             }
 
             // Очищаем старых врагов и предметы перед обновлением
@@ -179,7 +179,7 @@ namespace ConsoleRPG.Engine
             {
                 if (!players.ContainsKey(pDto.Id))
                 {
-                    players[pDto.Id] = new Player(pDto.X, pDto.Y) { Name = pDto.Name };
+                    players[pDto.Id] = new Player(pDto.X, pDto.Y) { Name = pDto.Name , Id = pDto.Id};
                 }
                 var p = players[pDto.Id];
                 p.X = pDto.X; p.Y = pDto.Y; p.Health = pDto.Health;

@@ -12,6 +12,7 @@ public abstract class Item
 
     public virtual char Symbol => _symbol;
     public virtual string Name => _name;
+    public virtual int SoundRange => 0;
 
     public virtual int GetDamage() {return 0;}
     public virtual void EquipLeft(Player p)=> EquipLeft(p, this);

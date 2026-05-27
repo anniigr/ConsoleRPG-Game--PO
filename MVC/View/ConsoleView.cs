@@ -12,7 +12,7 @@ namespace ConsoleRPG.MVC.View
     public class ConsoleView : IGameView
     {
         private Map _map;
-        private Dictionary<int, Player> _players; // Храним всех игроков
+        private Dictionary<int, Player> _players; 
 
         public ConsoleView(Map map, Dictionary<int, Player> players)
         {
@@ -29,7 +29,6 @@ namespace ConsoleRPG.MVC.View
             {
                 for (int x = 0; x < _map.Width; x++)
                 {
-                    // 1. Ищем, стоит ли на этих координатах (x,y) какой-нибудь игрок
                     Player? foundPlayer = null;
                     int foundPlayerId = 0;
 
@@ -39,11 +38,10 @@ namespace ConsoleRPG.MVC.View
                         {
                             foundPlayerId = pair.Key;
                             foundPlayer = pair.Value;
-                            break; // Игрок найден, дальше искать не нужно
+                            break; 
                         }
                     }
 
-                    // 2. Если игрок найден — рисуем его ID (например, '1' или '2')
                     if (foundPlayer != null)
                     {
                         screen.Append(foundPlayerId.ToString()); 
@@ -53,12 +51,10 @@ namespace ConsoleRPG.MVC.View
                        var cell = _map.GetCell(x, y);
                         if (cell != null && cell.Items.Count > 0)
                         {
-                            // Берем символ последнего предмета в списке
                             screen.Append(cell.Items.Last().Symbol); 
                         }
                         else
                         {
-                            // Если нет ни игрока, ни предметов — рисуем ландшафт
                             screen.Append(cell?.GetDrawSymbol() ?? '#');
                         }
                 }
@@ -66,7 +62,7 @@ namespace ConsoleRPG.MVC.View
 
                 screen.Append("   | ");
                 
-                string line = currentState.GetPanelLine(y, engine);
+                string line = GeneratePanelLine(y, engine, currentState);
                 screen.Append(line.PadRight(50)); 
                 
                 screen.AppendLine();
@@ -77,7 +73,6 @@ namespace ConsoleRPG.MVC.View
 
         public void DrawLog()
         {
-            // Обрати внимание: теперь тут _map вместо map
             int logLine = _map.Height + 1; 
             
             Console.SetCursorPosition(0, logLine);
@@ -99,6 +94,54 @@ namespace ConsoleRPG.MVC.View
             {
                 Console.WriteLine(logs[i]);
             }
+        }
+        private string GeneratePanelLine(int lineIndex, GameEngine engine, IGameState currentState)
+        {
+            string stateName = currentState.GetType().Name;
+
+            if (stateName == "MapState")
+            {
+                return lineIndex switch
+                {
+                    0 => "--- STATISTICS ---",
+                    1 => $"HP: {engine.player?.Health} | Strength: {engine.player?.Strength} | Dexterity: {engine.player?.Dexterity}",
+                    2 => $"Luck: {engine.player?.Luck} | Aggression: {engine.player?.Aggression} | Wisdom: {engine.player?.Wisdom}",
+                    3 => $"Coins: {engine.player?.Coins} | Gold: {engine.player?.Gold}",
+                    4 => "--- EQUIPMENT (Press I) ---",
+                    5 => $"Left arm:  {(engine.player?.LeftHand != null ? engine.player.LeftHand.Name : "[Empty]")}",
+                    6 => $"Right arm: {(engine.player?.RightHand != null ? engine.player.RightHand.Name : "[Empty]")}",
+                    7 => $"Damage:  {engine.player?.GetTotalDamage()}",
+                    8 => "--- ENVIRONMENT ---",
+                    9 => engine.GetFloorInfo(),
+                    10 => "[H] Help",
+                    _ => ""
+                };
+            }
+            else if (stateName == "InventoryState")
+            {
+                var invState = currentState as InventoryState;
+                if (lineIndex == 0) return "--- EQUIPMENT MODE ---";
+                
+                int itemIdx = lineIndex - 2;
+                if (engine.player != null && itemIdx >= 0 && itemIdx < engine.player.Inventory.Count)
+                {
+                    string pointer = (invState != null && itemIdx == invState.InventoryCursor) ? "> " : "  ";
+                    return $"{pointer}{engine.player.Inventory[itemIdx].Name}";
+                }
+                if (engine.player != null && lineIndex == engine.player.Inventory.Count + 3) return "[H] Help";
+                return "";
+            }
+            else if (stateName == "HelpState")
+            {
+                var actions = currentState.GetActionManager().GetAvailableActions(engine);
+                if (lineIndex == 0) return "--- HELP ---";
+                int actionIdx = lineIndex - 2;
+                if (actionIdx >= 0 && actionIdx < actions.Count) 
+                    return $"[{actions[actionIdx].Key}] {actions[actionIdx].Name}";
+                return "";
+            }
+
+            return "";
         }
     }
 }

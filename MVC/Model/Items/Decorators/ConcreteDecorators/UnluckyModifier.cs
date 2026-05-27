@@ -11,22 +11,22 @@ public class UnluckyModifier : ItemDecorator
     public override void EquipLeft(Player p, Item self) 
     {
         _innerItem.EquipLeft(p, self); 
-        p.Luck -= 5;                   
+        //p.Luck -= 5;                   
     }
 
     public override void EquipRight(Player p, Item self) 
     {
         _innerItem.EquipRight(p, self);
-        p.Luck -= 5;
+        //p.Luck -= 5;
     }
 
     public override void UnEquip(Player p, Item self) 
     {
         _innerItem.UnEquip(p, self);
-        p.Luck += 5;
+        //p.Luck += 5;
     }
     public override void Accept(IAttackVisitor visitor)
     {
-        _innerItem.Accept(visitor); 
+        //_innerItem.Accept(visitor); 
     }
 }

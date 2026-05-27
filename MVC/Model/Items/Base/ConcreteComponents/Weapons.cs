@@ -8,6 +8,7 @@ public abstract class Weapon : Item
 {
     public int damage;
     protected abstract int _soundRange { get; }
+    
     public override int GetDamage() => damage;
     public override void PickUp(Player p, Map map)
     {
@@ -69,12 +70,14 @@ public abstract class TwoHandedWeapon : Weapon
 } 
 public abstract class HeavyWeapon : TwoHandedWeapon 
 {
+    public override int SoundRange => _soundRange;
     protected override int _soundRange => 10;
     public override void Accept(IAttackVisitor visitor) => visitor.Visit(this);
 }
 
 public abstract class LightWeapon : OneHandedWeapon
 {
+    public override int SoundRange => _soundRange;
     protected override int _soundRange => 3;
     public override void Accept(IAttackVisitor visitor) => visitor.Visit(this);
     public override void PickUp(Player p, Map map)
@@ -89,6 +92,7 @@ public abstract class LightWeapon : OneHandedWeapon
 
 public abstract class MagicWeapon : OneHandedWeapon 
 {
+    public override int SoundRange => _soundRange;
     protected override int _soundRange => 5;
     public override void Accept(IAttackVisitor visitor) => visitor.Visit(this);
     public override void PickUp(Player p, Map map)

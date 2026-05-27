@@ -1,5 +1,4 @@
 using System.Security.Cryptography.X509Certificates;
-using ConsoleRPG.Engine;
 using ConsoleRPG.Items;
 using ConsoleRPG.World;
 using ConsoleRPG.Combat;
@@ -10,12 +9,35 @@ namespace ConsoleRPG.Entities;
 // Reciever
 public class Player : Entity,IEventListenerSound
 {
-    
-    public int Strength { get; set; } = 10;
+    private int _baseStrength = 10; 
+public int Strength 
+{
+    get 
+    {
+        int total = _baseStrength;
+        if (RightHand is Item rItem) total += GetItemStrengthBonus(rItem);
+        if (LeftHand is Item lItem && LeftHand != RightHand) total += GetItemStrengthBonus(lItem);
+        return total;
+    }
+    set { _baseStrength = value; } 
+    }
+
+private int _baseLuck = 10; 
+public int Luck 
+{
+    get 
+    {
+        int total = _baseLuck;
+        if (RightHand is Item rItem) total += GetItemLuckBonus(rItem);
+        if (LeftHand is Item lItem && LeftHand != RightHand) total += GetItemLuckBonus(lItem);
+        return total;
+    }
+    set { _baseLuck = value; }
+}
     public int Dexterity { get; set; } = 10; 
-    public int Luck { get; set; } = 5;
     public int Aggression { get; set; } = 5;
     public int Wisdom { get; set; } = 5;
+    public int SyncedTotalDamage { get; set; } = -1;
 
     public int Coins {get; set;}
     public int Gold {get; set;}
@@ -41,6 +63,7 @@ public class Player : Entity,IEventListenerSound
     }
     public int GetTotalDamage()
     {
+        if (SyncedTotalDamage != -1) return SyncedTotalDamage;
         int dmg = 0;
         if (LeftHand != null) dmg += LeftHand.GetDamage();
 
@@ -117,7 +140,17 @@ public class Player : Entity,IEventListenerSound
     }
     public void SoundProduced(int dist, int sourceX, int sourceY)
     {
-        // Теперь мы можем отправить лог конкретно этому игроку!
         GameLogger.GetInstance().LogToSpecificPlayer(this.Id, $"[SŁUCH] {this.Name} słyszy hałas z odległości {dist} pól!");
     }
+    private int GetItemStrengthBonus(Item item)
+{
+    if (item.Name.Contains("(Strong)")) return 5;
+    return 0;
+}
+
+private int GetItemLuckBonus(Item item)
+{
+    if (item.Name.Contains("(Unlucky)")) return -5; 
+    return 0;
+}
 }

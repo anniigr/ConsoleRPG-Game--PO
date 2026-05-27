@@ -7,7 +7,7 @@ public interface IGameState
     public void Update(GameEngine engine, ConsoleKey key);
     public void Draw(IGameView view, GameEngine engine);
     ActionManager GetActionManager();
-    string GetPanelLine(int lineIndex, GameEngine engine);
+
 }
 
 public class MapState : IGameState
@@ -38,7 +38,6 @@ public class MapState : IGameState
         if (action != null)
         {
             action.Execute(engine);
-            engine.ProcessEnemyTurn();
         }
         else
         {
@@ -51,25 +50,7 @@ public class MapState : IGameState
         view.DrawFrame(engine,this);
         view.DrawLog();
     }
-    public string GetPanelLine(int lineIndex, GameEngine engine)
-    {
-        return lineIndex switch
-        {
-            0 => "--- STATISTICS ---",
-                        1 => $"HP: {engine.player.Health} | Strength: {engine.player.Strength} | Dexterity: {engine.player.Dexterity}",
-                        2 => $"Luck: {engine.player.Luck} | Aggression: {engine.player.Aggression} | Wisdom: {engine.player.Wisdom}",
-                        3 => $"Coins: {engine.player.Coins} | Gold: {engine.player.Gold}",
-                        4 => "--- EQUIPMENT (Press I) ---",
-                        5 => $"Left arm:  {(engine.player.LeftHand != null ? engine.player.LeftHand.Name : "[Empty]")}",
-                        6 => $"Right arm: {(engine.player.RightHand != null ? engine.player.RightHand.Name : "[Empty]")}",
-                        7 => $"Damage:  {engine.player.GetTotalDamage()}",
-                        8 => "--- ENVIRONMENT ---",
-                        9 => engine.GetFloorInfo(),
-                        10 => "[H] Help",
-
-                        _ => ""
-        };
-    }
+    
 }
 
 

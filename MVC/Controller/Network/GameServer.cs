@@ -26,8 +26,6 @@ namespace ConsoleRPG.Networking
         {
             _port = port;
             _listener = new TcpListener(IPAddress.Any, _port);
-            
-            // Инициализируем главный серверный движок с оригинальной картой
             GameConfig config = ConfigManager.LoadConfig();
             _engine = new GameEngine(config, isServer: true);
         }
@@ -36,8 +34,9 @@ namespace ConsoleRPG.Networking
         {
             _isRunning = true;
             _listener.Start();
-            Console.WriteLine($"[SERWER] Uruchomiony na porcie {_port}. Oczekiwanie na graczy...");
+            GameLogger.GetInstance().Log($"[SERWER] Uruchomiony na porcie {_port}. Oczekiwanie na graczy...");
             Task.Run(AcceptClientsAsync);
+            Task.Run(EnemyLoopAsync);
         }
 
         private async Task AcceptClientsAsync()
@@ -56,7 +55,6 @@ namespace ConsoleRPG.Networking
 
                         _clients[id] = client;
 
-                        // Спавним игрока на серверной карте в проходимой точке
                         int spawnX = 2, spawnY = 2;
                         while (_engine.map.GetCell(spawnX, spawnY) != null && !_engine.map.GetCell(spawnX, spawnY).Terrain.IsPassable())
                         {
@@ -64,14 +62,12 @@ namespace ConsoleRPG.Networking
                         }
 
                         var newPlayer = new Player(spawnX, spawnY) { Name = $"Gracz {id}", Id = id };
-                        _engine.map.soundManager.Subscribe(newPlayer); // <-- Подписываем игрока на звуки карты
+                        _engine.map.soundManager.Subscribe(newPlayer); 
                         _engine.players[id] = newPlayer;
 
                         Task.Run(() => HandleClientAsync(id, client));
                         
-                        // 1. Отправляем карту новому клиенту
                         SendMapInitialization(id, client);
-                        // 2. Рассылаем всем новые позиции
                         BroadcastState();
                     }
                 }
@@ -124,7 +120,7 @@ namespace ConsoleRPG.Networking
                                 var deathMsg = new NetworkMessage { Type = "DEATH", Payload = "Zginąłeś w lochach!" };
                                 var deathWriter = new StreamWriter(client.GetStream()) { AutoFlush = true };
                                 deathWriter.WriteLine(JsonSerializer.Serialize(deathMsg));
-                                break; // Выходим из цикла чтения, что приведет к блоку finally и отключению
+                                break;
                             }
                         }
                         BroadcastState();
@@ -150,6 +146,8 @@ namespace ConsoleRPG.Networking
 
         private void BroadcastState()
         {
+            lock (_lock) 
+            {
             foreach (var pair in _clients)
             {
                 int id = pair.Key;
@@ -170,10 +168,10 @@ namespace ConsoleRPG.Networking
                     LeftHandName = p.Value.LeftHand?.Name ?? "",
                     RightHandName = p.Value.RightHand?.Name ?? "",
                     InventoryNames = p.Value.Inventory.Select(i => i.Name).ToList() // Передаем инвентарь
+                    
                 });
                 }
 
-                // Собираем динамические объекты с карты
                 for (int y = 0; y < _engine.map.Height; y++)
                 {
                     for (int x = 0; x < _engine.map.Width; x++)
@@ -195,6 +193,7 @@ namespace ConsoleRPG.Networking
                 }
                 catch { }
             }
+            }
         }
 
         public void TerminateServer()
@@ -202,5 +201,18 @@ namespace ConsoleRPG.Networking
             _isRunning = false;
             _listener.Stop();
         }
+        private async Task EnemyLoopAsync()
+        {
+            while (_isRunning)
+            {
+                await Task.Delay(1500); 
+                lock (_lock)
+                {
+                    _engine.ProcessEnemyTurn();
+                }
+                BroadcastState();
+            }
+        }
+        
     }
 }

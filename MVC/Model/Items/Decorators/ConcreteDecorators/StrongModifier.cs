@@ -17,6 +17,6 @@ public class StrongModifier : ItemDecorator
     {
         
         _innerItem.Accept(visitor); 
-        visitor.ResultDamage += 5; 
+        //visitor.ResultDamage += 5; 
     }
 }

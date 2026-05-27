@@ -22,8 +22,6 @@ namespace ConsoleRPG.Network
         public int Y { get; set; }
         public int Health { get; set; }
         public string Name { get; set; } = string.Empty;
-        
-        // ДОБАВЛЕННЫЕ СТАТЫ ДЛЯ ПАНЕЛИ
         public int Strength { get; set; }
         public int Dexterity { get; set; }
         public int Luck { get; set; }
@@ -76,7 +74,6 @@ namespace ConsoleRPG.Network
         public int InventoryCount { get; set; }
     }
 
-    // Класс всего состояния игры для отрисовки
     public class GameStateDto
     {
         public int PlayerId { get; set; }

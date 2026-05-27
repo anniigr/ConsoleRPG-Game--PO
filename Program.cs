@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using ConsoleRPG.MVC.View;
 using ConsoleRPG.Networking;
 
 namespace ConsoleRPG
@@ -44,9 +45,9 @@ namespace ConsoleRPG
             {
                 Console.Clear();
                 Console.WriteLine("==========================================================================");
-                Console.WriteLine("                    GRA RPG - REFAKTORYZACJA SIECIOWA                     ");
+                Console.WriteLine("                    GRA RPG - REFAKTORYZACJA SIECIOWA, etap 6                     ");
                 Console.WriteLine("==========================================================================");
-                Console.Write("Wybierz tryb działania aplikacji -> (S)erwer / (K)lient: ");
+                Console.Write("Wybierz tryb dzialania aplikacji -> (S)erwer / (K)lient: ");
                 
                 ConsoleKey pressedKey = Console.ReadKey(true).Key;
                 Console.WriteLine();
@@ -78,9 +79,24 @@ namespace ConsoleRPG
             }
             else if (systemMode == "CLIENT")
             {
+                Console.Clear();
+                Console.WriteLine("[KLIENT] Łączenie z serwerem...");
+                
                 GameClient client = new GameClient(remoteIpTarget, operationalPort);
                 await client.RunClientAsync();
+
+                if (!client.IsActive)
+                {
+                    Console.WriteLine("Nie udało się połączyć. Naciśnij dowolny klawisz...");
+                    Console.ReadKey();
+                    return;
+                }
+
+                // Используем Контроллер по паттерну MVC
+                ClientController controller = new ClientController(client);
+                await controller.RunLoopAsync();
             }
-        }
+            }
+        
     }
 }

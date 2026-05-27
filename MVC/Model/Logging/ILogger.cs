@@ -24,11 +24,3 @@ public class FileLogger : ILogger
     public List<string> GetAllLogs() => new List<string> { "Logi w pliku: " + _filePath };
     public string GetLogFilePath() => _filePath;
 }
-
-public class ConsoleLogger : ILogger
-{
-    public void Log(string message) => Console.WriteLine($"[LOG]: {message}");
-    public string GetLastLog() => "Wyświetlono в konsoli";
-    public List<string> GetAllLogs() => new List<string> { "Tylko podgląd konsoli" };
-    public string GetLogFilePath() => "BRAK (Konsola)";
-}

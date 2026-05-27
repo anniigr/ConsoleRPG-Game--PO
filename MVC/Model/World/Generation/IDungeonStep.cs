@@ -146,33 +146,22 @@ public class ItemsGenerator : IDungeonStep {
             if(map.IsInsideInnerArea(startX,startY) && cell.Terrain.IsPassable())
             {
                 Func<Item> CreateItem = listOfFunc[rand.Next(listOfFunc.Count)];
-                Item item = CreateItem(); // Создаем базовый предмет (например, Меч)
-
-                // ========================================================
-                // ВСТАВЛЕННЫЙ БЛОК ДЛЯ МОДИФИКАТОРОВ ОРУЖИЯ
-                // ========================================================
-                // Проверяем, является ли предмет оружием (класс Weapon)
+                Item item = CreateItem(); 
                 if (item is Weapon)
                 {
-                    // Задаем шанс (например, 50%), что оружие получит модификатор
                     if (rand.Next(100) < 100)
                     {
-                        int modifierType = rand.Next(2); // Роллим 0 или 1
+                        int modifierType = rand.Next(2); 
                         if (modifierType == 0)
                         {
-                            // Оборачиваем в декоратор Strong. 
-                            // Если твой класс называется иначе, исправь имя класса здесь:
                             item = new StrongModifier(item); 
                         }
                         else
                         {
-                            // Оборачиваем в декоратор Unlucky.
-                            // Если твой класс называется иначе, исправь имя класса здесь:
                             item = new UnluckyModifier(item); 
                         }
                     }
                 }
-                // ========================================================
 
                 cell.Items.Add(item);
                 placed ++;

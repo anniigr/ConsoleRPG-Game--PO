@@ -18,16 +18,13 @@ public abstract class ItemDecorator : Item
     public override int GetDamage() => _innerItem.GetDamage();
     public override void PickUp(Player p, Map map) 
 {
-    // Выполняем стандартное добавление САМОГО ДЕКОРАТОРА в инвентарь (чтобы бафф остался)
     p.Inventory.Add(this); 
     Cell cell = map.GetCell(p.X, p.Y); 
     cell.Items.Remove(this); 
     GameLogger.GetInstance().Log($"Picked up decorated item: {Name}.");
 
-    // Оповещаем звуковую систему (исправленный вызов):
     if (SoundRange > 0)
     {
-        // Передаем: x (p.X), y (p.Y), range (SoundRange), map (map)
         map.soundManager.Notify(p.X, p.Y, SoundRange, map);
     }
 }

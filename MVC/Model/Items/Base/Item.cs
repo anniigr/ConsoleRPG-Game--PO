@@ -67,7 +67,6 @@ public abstract class Item
     }
 
 }
-// В файле Items/Item.cs или другом месте:
 public class GenericItem : Item 
 {
     public override char Symbol { get; }
@@ -78,7 +77,6 @@ public class GenericItem : Item
         Name = name;
         Symbol = symbol;
     }
-    // Реализуйте необходимые методы, если они абстрактные
 }
 
 

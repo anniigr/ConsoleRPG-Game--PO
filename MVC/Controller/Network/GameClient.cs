@@ -8,6 +8,7 @@ using ConsoleRPG.Engine;
 using ConsoleRPG.Config;
 using ConsoleRPG.Log;
 
+
 namespace ConsoleRPG.Networking
 {
     public class GameClient

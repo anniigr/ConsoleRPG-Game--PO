@@ -12,7 +12,7 @@ namespace ConsoleRPG.Network
     {
         public int Width { get; set; }
         public int Height { get; set; }
-        public List<string> MapRows { get; set; } = new List<string>(); // Символы проходимости '#' и '.'
+        public List<string> MapRows { get; set; } = new List<string>(); 
     }
 
     public class PlayerDto
@@ -72,13 +72,5 @@ namespace ConsoleRPG.Network
         public string RightHandItem { get; set; } = "Puste";
         public string LeftHandItem { get; set; } = "Puste";
         public int InventoryCount { get; set; }
-    }
-
-    public class GameStateDto
-    {
-        public int PlayerId { get; set; }
-        public List<string> GridRows { get; set; } = new List<string>();
-        public PlayerStatsDto PlayerStats { get; set; } = new PlayerStatsDto();
-        public List<string> RecentLogs { get; set; } = new List<string>();
     }
 }

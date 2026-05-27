@@ -6,7 +6,6 @@ using ConsoleRPG.Config;
 using ConsoleRPG.World;
 using ConsoleRPG.Log;
 using ConsoleRPG.Systems;
-using ConsoleRPG.MVC.View;
 using ConsoleRPG.Network;
 using ConsoleRPG.Items;
 
@@ -173,7 +172,6 @@ namespace ConsoleRPG.Engine
             var toRemove = players.Keys.Where(id => !activeIds.Contains(id)).ToList();
             foreach (var id in toRemove) players.Remove(id);
 
-            // Синхронизация врагов
             foreach (var eDto in update.Enemies)
             {
                 var cell = map.GetCell(eDto.X, eDto.Y);

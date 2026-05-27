@@ -92,7 +92,6 @@ namespace ConsoleRPG
                     return;
                 }
 
-                // Используем Контроллер по паттерну MVC
                 ClientController controller = new ClientController(client);
                 await controller.RunLoopAsync();
             }

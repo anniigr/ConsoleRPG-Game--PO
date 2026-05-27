@@ -134,7 +134,7 @@ namespace ConsoleRPG.Networking
                 {
                     if (_engine.players.ContainsKey(id))
                     {
-                        _engine.map.soundManager.Unsubscribe(_engine.players[id]); // <-- Обязательно отписываем
+                        _engine.map.soundManager.Unsubscribe(_engine.players[id]); 
                         _engine.players.Remove(id);
                     }
                     _clients.Remove(id);
@@ -167,7 +167,7 @@ namespace ConsoleRPG.Networking
                     Coins = p.Value.Coins, Gold = p.Value.Gold,
                     LeftHandName = p.Value.LeftHand?.Name ?? "",
                     RightHandName = p.Value.RightHand?.Name ?? "",
-                    InventoryNames = p.Value.Inventory.Select(i => i.Name).ToList() // Передаем инвентарь
+                    InventoryNames = p.Value.Inventory.Select(i => i.Name).ToList() 
                     
                 });
                 }

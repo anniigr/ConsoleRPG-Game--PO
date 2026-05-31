@@ -10,24 +10,20 @@
 
 ## 📖 Overview
 
-This project is not just a standard console game; it is a **comprehensive architectural challenge** developed over 7 rigorous iterations. Built entirely in C#, the application evolved from a simple single-player grid explorer into a **fully synchronized, thread-safe, multiplayer network game** supporting up to 9 concurrent players.
+This project represents a scalable, real-time client-server system for multi-user interaction, implemented in C#. Throughout its 7-stage evolution, the architecture transitioned from a monolithic console-based game engine into a distributed system featuring an authoritative server and support for up to 9 concurrent network clients. The development focused on strict MVC-based decomposition, ensuring complete decoupling of business logic from presentation and networking layers.
 
 The core engineering constraint of this project was absolute adherence to Object-Oriented Programming (OOP) principles. The codebase strictly avoids Run-Time Type Information (RTTI) such as `is`, `as`, `typeof`, and type-identifying `enums`. Instead, all logic is driven by clean polymorphism and classical Gang of Four (GoF) design patterns.
 
 ## 🏗️ Architectural Highlights
 
-To satisfy the demands of real-time multiplayer synchronization and complex game logic, the project utilizes an **Authoritative Server** model wrapped in an **MVC (Model-View-Controller)** architecture:
-
-* **Model (Source of Truth):** Encapsulates the entire game state (map grid, player stats, NPC behavior, item locations). It is entirely decoupled from the console and network layers.
-* **View:** Responsible strictly for rendering data. In client mode, it parses incoming JSON state payloads and efficiently draws them to the console.
-* **Controller:** Captures, validates, and routes player inputs (W, S, A, D, E, J) to the Model.
-* **Concurrency & Networking:** Custom implementation using `TcpListener` and `TcpClient`. Thread safety is ensured via `lock` mechanisms and thread-safe collections to handle simultaneous TCP requests without race conditions.
+* **Model (Source of Truth):** Encapsulates the entire game state (map grid, player stats, NPC behavior, item locations). Entirely decoupled from the console and network layers.
+* **View:** Implements separate renderers for the local console and remote network clients (via JSON payloads).
+* **Controller:** Validates player input and routes actions to the Model. Each client session is handled by an isolated controller instance.
+* **Concurrency & Networking:** Implemented using `TcpListener` and `TcpClient`. Thread safety is ensured through `lock` mechanisms and concurrent collections, allowing the server to handle multiple simultaneous TCP requests without race conditions.
 
 ---
 
 ## 🧩 Applied Design Patterns
-
-A major focus of this project was applying the right design patterns to solve complex scaling issues without hardcoding logic or creating massive `if/switch` statements.
 
 | Design Pattern | Implementation in Project | Solved Engineering Problem |
 | :--- | :--- | :--- |
@@ -36,71 +32,52 @@ A major focus of this project was applying the right design patterns to solve co
 | **Decorator** | Dynamic Weapon Modifiers | Applied infinite stackable modifiers (e.g., "Unlucky", "Strong") to weapons during world generation without modifying base classes. |
 | **Strategy / Builder** | Procedural Dungeon Generation | Enabled modular creation of dungeons based on specific configuration "Themes" (e.g., corridors, rooms, artifact placements). |
 | **State** | Reactive Enemy AI | Allowed NPCs to dynamically switch behaviors (Follow, Flee, Ignore) based on a Sight > Sound priority hierarchy and HP thresholds. |
+| **Singleton** | Configuration Manager / Logger | Ensures a single point of access to the external configuration files and global event logging stream across all modules. |
+| **Director** | Dungeon Generation Control | Orchestrates the sequence of building steps (empty, corridors, central rooms, loot) defined in the Builder interface to produce consistent dungeon layouts. |
+| **Visitor** | Combat & Statistic Calculation | Decouples the operation of calculating combat modifiers (or stat propagation) from the item hierarchy, allowing new operations without modifying Item classes. |
+
 
 ---
 
 ## 🚀 Key Features by Development Stage
-
-> 👇 **Click to expand the technical details of each development phase**
-
-<details>
-<summary><strong>🗺️ Stage 1 & 2: Procedural Generation & Grid Engine</strong></summary>
-<br>
-<ul>
-  <li>Constructed a 20x40 coordinate grid system with solid collision detection.</li>
-  <li>Implemented procedural dungeon building sequences (empty halls, corridors, central rooms, randomized loot).</li>
-  <li>Developed a dynamic, context-aware UI that adapts its instructions based on the specific elements generated in the current dungeon.</li>
-</ul>
+details>
+<summary><strong>Stages 1–2: Engine & Procedural Generation</strong></summary>
+Implemented a grid-based engine with modular dungeon generation using strategy-based building blocks (halls, rooms, artifacts).
 </details>
 
 <details>
-<summary><strong>⚔️ Stage 3: Polymorphic Combat System</strong></summary>
-<br>
-<ul>
-  <li>Turn-based combat calculating armor mitigation, base attack, and HP.</li>
-  <li>3 Weapon Categories (Heavy, Light, Magic) and 3 Attack Styles (Normal, Stealth, Magic).</li>
-  <li>Damage and defense scaling is handled entirely via polymorphism, completely eliminating "spaghetti code" <code>switch</code> statements for combat resolution.</li>
-</ul>
+<summary><strong>Stage 3: Polymorphic Combat System</strong></summary>
+Developed a combat model featuring weapon categories (Heavy, Light, Magic) and attack styles (Normal, Stealth, Magic). Damage scaling is strictly polymorphic.
 </details>
 
 <details>
-<summary><strong>📜 Stage 4: Event Sourcing & JSON Configurations</strong></summary>
-<br>
-<ul>
-  <li>Game initialization via external <code>.ini</code> / <code>.json</code> config files determining Player Name, Dungeon Theme, and Log paths.</li>
-  <li>Dungeon Themes control item pools, specific artifact generation, and enemy types (e.g., "Vault" theme spawns aggressive safes and gold).</li>
-  <li>Thread-safe Event Log system writing real-time combat and exploration data to custom timestamped files.</li>
-</ul>
+<summary><strong>Stage 4: Configuration & Event Logging</strong></summary>
+System initialization via external JSON/INI files. Implemented a thread-safe event log capturing all critical game state changes.
 </details>
 
 <details>
-<summary><strong>🧠 Stage 5 & 7: Advanced AI & Wave Propagation</strong></summary>
-<br>
-<ul>
-  <li><strong>Acoustic Pathfinding:</strong> Sound generated by dropped/equipped items travels through corridors (blocked by walls). Heavy weapons generate high-range noise, light weapons are stealthy.</li>
-  <li><strong>Herd Mechanics:</strong> Enemies belong to species (e.g., Goblins, Skeletons). Killing an aggressive skeleton buffs the remaining pack, while killing a cowardly goblin nerfs them.</li>
-  <li><strong>Behavior Trees:</strong> NPCs dynamically follow or flee from players based on line-of-sight checks and acoustic pings.</li>
-</ul>
+<summary><strong>Stages 5 & 7: AI Behavior & Acoustic Pathfinding</strong></summary>
+Implemented noise propagation algorithms and collective NPC behaviors. Sound waves interact with the map topology, and NPCs communicate state changes within their respective species.
 </details>
 
 <details>
-<summary><strong>🌐 Stage 6: TCP Multiplayer Backend</strong></summary>
-<br>
-<ul>
-  <li>Refactored the entire codebase to support up to 9 players sharing the same map.</li>
-  <li>Command-line arguments allow the app to boot as an Authoritative Server (<code>--server [port]</code>) or a Remote Client (<code>--client [ip:port]</code>).</li>
-  <li>State broadcasting using <code>System.Text.Json</code> for object serialization and Data Transfer Objects (DTOs).</li>
-  <li>Handled network latency and simultaneous turn-queuing using multithreading.</li>
-</ul>
+<summary><strong>Stage 6: Networked Multiplayer</strong></summary>
+Migrated to an Authoritative Server model. Data synchronization is performed via `System.Text.Json` serialization.
 </details>
-
+---
 ---
 
-## 🎮 How to Run
+## 🔧 Technical Setup
 
-You can run this project locally to test the multiplayer capabilities. 
+**System Requirements:**
+* .NET SDK 8.0+
 
-**1. Clone the repository:**
-```bash
-git clone [https://github.com/YourUsername/ConsoleRPG-MVC-Multiplayer.git](https://github.com/YourUsername/ConsoleRPG-MVC-Multiplayer.git)
-cd ConsoleRPG-MVC-Multiplayer
+**Running the System:**
+
+1. **Start the Server:**
+   ```bash
+   dotnet run -- --server 5555
+2. **Connect a Client:**
+   ```bash
+   dotnet run -- --client 127.0.0.1:5555
+   Developed as a project for Object-Oriented Programming (Warsaw University of Technology).

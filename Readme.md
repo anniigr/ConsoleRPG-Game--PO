@@ -11,9 +11,8 @@
   <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExb2tyMGx6cm40eHYyNHZkNHRtaTd5OTU4OXZudmNhNTZwdWtzODk2YSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l9eJw5IqiSDwVzb4bh/giphy.gif" width="400px" />
 </p>
 
-## 📖 Overview
-
-This project represents a scalable, real-time client-server system for multi-user interaction, implemented in C#. Throughout its 7-stage evolution, the architecture transitioned from a monolithic console-based game engine into a distributed system featuring an authoritative server and support for up to 9 concurrent network clients. The development focused on strict MVC-based decomposition, ensuring complete decoupling of business logic from presentation and networking layers.
+This project represents a scalable, real-time client-server system for multi-user interaction, implemented in C#. Throughout its 7-stage evolution, the architecture transitioned from a monolithic console-based game engine into a distributed system featuring an authoritative server and support for up to 9 concurrent network clients.
+The development focused on strict MVC-based decomposition, ensuring complete decoupling of business logic from presentation and networking layers.
 
 The core engineering constraint of this project was absolute adherence to Object-Oriented Programming (OOP) principles. The codebase strictly avoids Run-Time Type Information (RTTI) such as `is`, `as`, `typeof`, and type-identifying `enums`. Instead, all logic is driven by clean polymorphism and classical Gang of Four (GoF) design patterns.
 

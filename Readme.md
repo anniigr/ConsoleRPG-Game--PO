@@ -1,6 +1,6 @@
 # ⚔️ Console RPG: TCP Multiplayer & MVC Architecture
 <p align="center">
-  <img src="https://www.google.com/search?q=https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJqenJ4bmV4ZzR6NHJ4bmV4ZzR6NHJ4bmV4ZzR6NHJ4bmV4ZzR6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxxHOGTdzJC/giphy.gif" width="400px" />
+  <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExb2tyMGx6cm40eHYyNHZkNHRtaTd5OTU4OXZudmNhNTZwdWtzODk2YSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l9eJw5IqiSDwVzb4bh/giphy.gif" width="400px" />
 </p>
 <p align="center">
   <img src="https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white" alt="C#"/>

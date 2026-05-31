@@ -99,6 +99,7 @@ classDiagram
     Terrain <|-- Floor : Inheritance
     Terrain <|-- Wall : Inheritance
     Player "1" o-- "many" Item : Holds Inventory
+  ```
 </details>
 
 <details>

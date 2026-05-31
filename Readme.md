@@ -120,8 +120,7 @@ Implemented noise propagation algorithms and collective NPC behaviors. Sound wav
 <summary><strong>Stage 6: Networked Multiplayer</strong></summary>
 Migrated to an Authoritative Server model. Data synchronization is performed via `System.Text.Json` serialization.
 </details>
----
----
+
 ```mermaid
 classDiagram
     class Item {

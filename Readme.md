@@ -242,59 +242,54 @@ Developed a combat model featuring weapon categories (Heavy, Light, Magic) and a
 classDiagram
     direction TB
 
-    %% --- DECORATOR PATTERN: MODYFIKATORY PRZEDMIOTÓW ---
     class Item {
         <<abstract>>
-        +string Name*
+        +Name string
         +GetDamage() int
         +GetStatBonus() int
     }
 
     class ItemModifier {
         <<abstract>>
-        #Item _wrappee
-        +string Name
+        #_wrappee Item
+        +Name string
         +GetDamage() int
         +GetStatBonus() int
-        +ItemModifier(Item wrappee)
     }
 
     class DamageModifier {
-        -int _damageBonus
-        +string Name
+        -_damageBonus int
         +GetDamage() int
     }
 
     class StatModifier {
-        -int _statBonus
-        -string _statType
-        +string Name
+        -_statBonus int
+        -_statType string
         +GetStatBonus() int
     }
 
-    Item <|-- ItemModifier : Dziedziczenie (Decorator)
-    ItemModifier o-- Item : Kompozycja (Owija bazowy Item)
+    Item <|-- ItemModifier
+    ItemModifier o-- Item
     ItemModifier <|-- DamageModifier
     ItemModifier <|-- StatModifier
 
-    %% --- KATEGORIE BRONI ---
     class Weapon {
         <<abstract>>
     }
 
     class HeavyWeapon {
         <<abstract>>
-        +Accept(IAttackStrategy strategy, Player p) int
+        +Accept(strategy, player) int
     }
 
     class LightWeapon {
         <<abstract>>
-        +Accept(IAttackStrategy strategy, Player p) int
+        +Accept(strategy, player) int
     }
 
     class MagicWeapon {
         <<abstract>>
-        +Accept(IAttackStrategy strategy, Player p) int
+        +Accept(strategy, player) int
     }
 
     Item <|-- Weapon
@@ -302,61 +297,41 @@ classDiagram
     Weapon <|-- LightWeapon
     Weapon <|-- MagicWeapon
 
-    %% --- SYSTEM WALKI I WROGOWIE ---
     class Enemy {
-        +int HealthPoints
-        +int AttackValue
-        +int ArmorPoints
-        +TakeDamage(int damage) void
-        +PerformCounterAttack(Player p) void
+        +HealthPoints int
+        +AttackValue int
+        +ArmorPoints int
+        +TakeDamage(damage) void
+        +PerformCounterAttack(player) void
     }
 
     class Player {
-        +PerformAttack(Enemy target, IAttackStrategy strategy) void
-        +TakeDamage(int incomingDamage, IAttackStrategy lastUsedStrategy) void
+        +PerformAttack(enemy, strategy) void
+        +TakeDamage(damage, strategy) void
     }
 
-    %% --- VISITOR / STRATEGY PATTERN: MECHANIKA ATAKU I OBRONY ---
     class IAttackStrategy {
         <<interface>>
-        +CalculateDamage(HeavyWeapon w, Player p) int
-        +CalculateDamage(LightWeapon w, Player p) int
-        +CalculateDamage(MagicWeapon w, Player p) int
-        +CalculateDefense(Weapon w, Player p) int
+        +CalculateDamage(HeavyWeapon, Player) int
+        +CalculateDamage(LightWeapon, Player) int
+        +CalculateDamage(MagicWeapon, Player) int
+        +CalculateDefense(Weapon, Player) int
     }
 
-    class NormalAttack {
-        +CalculateDamage(HeavyWeapon w, Player p) int
-        +CalculateDamage(LightWeapon w, Player p) int
-        +CalculateDamage(MagicWeapon w, Player p) int
-        +CalculateDefense(Weapon w, Player p) int
-    }
+    class NormalAttack
+    class StealthAttack
+    class MagicAttack
 
-    class StealthAttack {
-        +CalculateDamage(HeavyWeapon w, Player p) int
-        +CalculateDamage(LightWeapon w, Player p) int
-        +CalculateDamage(MagicWeapon w, Player p) int
-        +CalculateDefense(Weapon w, Player p) int
-    }
+    IAttackStrategy <|.. NormalAttack
+    IAttackStrategy <|.. StealthAttack
+    IAttackStrategy <|.. MagicAttack
 
-    class MagicAttack {
-        +CalculateDamage(HeavyWeapon w, Player p) int
-        +CalculateDamage(LightWeapon w, Player p) int
-        +CalculateDamage(MagicWeapon w, Player p) int
-        +CalculateDefense(Weapon w, Player p) int
-    }
+    Player --> IAttackStrategy
+    Player --> Enemy
 
-    IAttackStrategy <|.. NormalAttack : Atak zwykły
-    IAttackStrategy <|.. StealthAttack : Atak skryty
-    IAttackStrategy <|.. MagicAttack : Atak magiczny
-    
-    Player --> IAttackStrategy : Wybiera rodzaj ataku
-    Player --> Enemy : Inicjuje walkę
-    
-    %% Double Dispatch representation (Visitor)
-    IAttackStrategy ..> HeavyWeapon : Oblicza na podst. Siły
-    IAttackStrategy ..> LightWeapon : Oblicza na podst. Zręczności
-    IAttackStrategy ..> MagicWeapon : Oblicza na podst. Mądrości
+    IAttackStrategy ..> HeavyWeapon
+    IAttackStrategy ..> LightWeapon
+    IAttackStrategy ..> MagicWeapon
 ```
 
 <details>

@@ -1,5 +1,6 @@
 <p align="center">
-  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjEx.../giphy.gif" width="500px" alt="Gameplay preview"/>
+  <!-- Replace the URL below with the path to your gameplay GIF later -->
+  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjEx.../giphy.gif" width="550px" alt="Gameplay Preview"/>
 </p>
 
 # ⚔️ Console RPG
@@ -7,101 +8,103 @@
 <p align="center">
   <img src="https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white" alt="C#"/>
   <img src="https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET"/>
-  <img src="https://img.shields.io/badge/Console-000000?style=for-the-badge&logo=windows-terminal&logoColor=white" alt="Console"/>
+  <img src="https://img.shields.io/badge/Console-000000?style=for-the-badge&logo=windows-terminal&logoColor=white" alt="Terminal"/>
 </p>
 
-## 📘 Оглавление
+## 📘 Table of Contents
 
-1. [📖 Обзор](#-обзор)
-2. [🎯 Возможности (Особенности)](#-возможности)
-3. [🏗️ Архитектура](#-архитектура)
-4. [🎮 Управление](#-управление)
+1. [📖 Overview](#-overview)
+2. [🎯 Features](#-features)
+3. [🎮 Controls](#-controls)
+4. [🏗️ Architecture](#-architecture)
 
-## 📖 Обзор
+## 📖 Overview
 
-**Console RPG** — это классическая ролевая игра, работающая прямо в терминале Windows. Проект демонстрирует принципы объектно-ориентированного программирования (ООП), инкапсуляции и чистого кода на языке C#. 
+**Console RPG** is a classic retro-style role-playing game that runs entirely inside your terminal window[cite: 2]. Built from scratch in C#, this project showcases robust Object-Oriented Programming (OOP) concepts, encapsulation, and clean architectural design[cite: 2]. 
 
-В игре реализована система перемещения по карте, генерация окружения (стены и пол), а также полноценная система экипировки и инвентаря. Вы можете исследовать мир, находить золото, подбирать оружие и брать его в разные руки для расчета суммарного урона! 🛡️🗡️
+Players can explore a dynamic map grid, gather treasure, manage an active inventory, and dual-wield weapons to calculate total combat damage[cite: 2]. No heavy graphics engines required—just pure, retro console mechanics[cite: 2]!
 
-## 🎯 Возможности
+## 🎯 Features
 
-> 👇 **Нажмите на любую из возможностей ниже, чтобы узнать детали**
+> 👇 **Click on any feature below to expand and see details**
 
 <details>
 <summary>
-🗺️ <strong> Исследование мира </strong> - Перемещайтесь по сетке карты, избегая препятствий
+🗺️ <strong> Grid Map Exploration </strong> - Navigate a structured map layout
 </summary>
 <br>
 <ul>
-  <li>&nbsp Карта имеет размеры 40x20 клеток.</li>
-  <li>&nbsp Система коллизий не позволяет проходить сквозь стены (<code>Wall</code>).</li>
-  <li>&nbsp На полу (<code>Floor</code>) можно находить спрятанные предметы.</li>
+  <li>&nbsp Explorable grid boundaries measuring <strong>40x20</strong> cells[cite: 2].</li>
+  <li>&nbsp Distinct map elements: solid walls (<code>█</code>) and open floor layouts (<code> </code>)[cite: 2].</li>
+  <li>&nbsp Fully active collision system preventing the player (<code>¶</code>) from walking through impassable terrain[cite: 2].</li>
 </ul>
 </details>
 
 <details>
 <summary>
-🎒 <strong> Продвинутый инвентарь </strong> - Собирайте и управляйте своими вещами
+🎒 <strong> Interactive Equipment & Inventory </strong> - Manage your combat gear
 </summary>
 <br>
 <ul>
-  <li>&nbsp Поднимайте предметы с пола нажатием одной кнопки.</li>
-  <li>&nbsp Выбрасывайте ненужный мусор (например, кости или старые кружки) обратно на карту.</li>
-  <li>&nbsp Экономика: подбирайте монеты и слитки золота, которые автоматически попадают в ваш кошелек.</li>
+  <li>&nbsp <strong>One-Handed Modularity:</strong> Weapons like Swords (<code>†</code>) and Axes (<code>P</code>) can be assigned freely to either the left or right hand[cite: 2].</li>
+  <li>&nbsp <strong>Two-Handed Mastery:</strong> Massive Greatswords (<code>W</code>) dynamically occupy both hands simultaneously[cite: 2].</li>
+  <li>&nbsp <strong>Dynamic Damage Calculation:</strong> Combines active weapon ratings automatically to output your total offensive power[cite: 2].</li>
 </ul>
 </details>
 
 <details>
 <summary>
-⚔️ <strong> Боевая экипировка </strong> - Настраивайте свое оружие
+💰 <strong> Automatic Currency Wallet </strong> - Gather rare loot
 </summary>
 <br>
 <ul>
-  <li>&nbsp <strong>Одноручное оружие:</strong> Мечи и топоры можно взять как в левую, так и в правую руку.</li>
-  <li>&nbsp <strong>Двуручное оружие:</strong> Тяжелые мечи (Greatswords) занимают сразу обе руки.</li>
-  <li>&nbsp Автоматический подсчет общего урона персонажа в зависимости от экипировки.</li>
+  <li>&nbsp Walking over currency items auto-processes them into your stash[cite: 2].</li>
+  <li>&nbsp Finding a Coin (<code>o</code>) instantly awards +5 coins[cite: 2].</li>
+  <li>&nbsp Uncovering Gold (<code>G</code>) increases your permanent gold bar inventory[cite: 2].</li>
 </ul>
 </details>
 
 <details>
 <summary>
-📊 <strong> Экран статистики </strong> - Отслеживайте состояние персонажа
+📊 <strong> Live Stat Monitoring & HUD </strong> - Tracking status in real-time
 </summary>
 <br>
 <p>
-В реальном времени на экране отображаются ваши характеристики: HP, Сила, Ловкость, Удача, а также текущее состояние левой и правой руки. Журнал событий (LOG) внизу экрана подскажет, что произошло на последнем ходу.
+The UI features a side-panel HUD constructed via high-performance <code>StringBuilder</code> streams[cite: 2]. It displays live stats (HP, Strength, Dexterity, Luck, Aggression, Wisdom), current active equipment hand slots, environmental floor items, and a rolling text log tracking your actions[cite: 2].
 </p>
 </details>
 
-## 🎮 Управление
+## 🎮 Controls
 
-Игра имеет два режима: **Режим Карты** и **Режим Экипировки**.
+The game operates seamlessly across two primary interface modes[cite: 2]:
 
-### На карте:
-* `W`, `A`, `S`, `D` — Перемещение персонажа.
-* `E` — Поднять предмет с пола.
-* `I` — Открыть инвентарь.
-* `Q` или `Esc` — Выход из игры.
+### 🗺️ Map Mode Controls
+* **`W` / `A` / `S` / `D`** — Move Player Up, Left, Down, or Right[cite: 2].
+* **`E`** — Pick up the topmost item on the current cell floor[cite: 2].
+* **`I`** — Access the Equipment Inventory screen[cite: 2].
+* **`Q` / `Esc`** — Safe terminate and close game instance[cite: 2].
 
-### В инвентаре:
-* `W`, `S` — Выбор предмета (курсор).
-* `L` — Взять предмет в левую руку.
-* `R` — Взять предмет в правую руку.
-* `1` / `2` — Снять экипировку с левой / правой руки.
-* `Q` — Выбросить предмет на пол.
-* `I` или `Esc` — Закрыть инвентарь.
+### 🎒 Inventory Mode Controls
+* **`W` / `S`** — Move selection cursor up and down through item list[cite: 2].
+* **`L`** — Equip the highlighted item to your Left Hand[cite: 2].
+* **`R`** — Equip the highlighted item to your Right Hand[cite: 2].
+* **`1`** — Unequip item currently held in your Left Hand[cite: 2].
+* **`2`** — Unequip item currently held in your Right Hand[cite: 2].
+* **`Q`** — Drop selected inventory item back onto the map floor cell[cite: 2].
+* **`I` / `Esc`** — Close inventory view and return to exploration[cite: 2].
 
-## 🏗️ Архитектура
+## 🏗️ Architecture
 
-Проект четко разделен на логические пространства имен (Namespaces):
+The backend of **Console RPG** uses structured namespacing to segregate data models from drawing mechanics[cite: 2]:
 
-* **`ConsoleRPG.World`** — Логика карты (Map, Cell) и типов местности (Terrain, Wall, Floor).
-* **`ConsoleRPG.Entities`** — Сущности игры (включая класс Player с его характеристиками и логикой перемещения).
-* **`ConsoleRPG.Items`** — Базовые классы предметов и реализация (оружие, валюта, мусор).
-* **`ConsoleRPG.Engine`** — Ядро игры. `GameEngine` обрабатывает ввод, а `Renderer` отвечает за покадровую отрисовку интерфейса с помощью `StringBuilder`.
+* **`ConsoleRPG.World`** — Governs tile maps, coordinate cells, and spatial terrain classes[cite: 2].
+* **`ConsoleRPG.Entities`** — Houses player metrics, movement systems, and baseline statistics[cite: 2].
+* **`ConsoleRPG.Items`** — Handles items, separating trash junk from scalable weapon frameworks and wallets[cite: 2].
+* **`ConsoleRPG.Engine`** — Drives execution; contains the core `GameEngine` loop and frame-by-frame text rendering pipelines[cite: 2].
 
-### Диаграмма классов предметов (Items)
-Ниже представлена структура наследования игровых предметов:
+### 📊 Item Hierarchy Blueprint
+
+The following entity tree maps how classes inherit behaviors from the master object types:
 
 ```mermaid
 classDiagram

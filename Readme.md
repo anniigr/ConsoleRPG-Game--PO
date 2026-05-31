@@ -348,50 +348,6 @@ Implemented noise propagation algorithms and collective NPC behaviors. Sound wav
 <summary><strong>Stage 6: Networked Multiplayer</strong></summary>
 Migrated to an Authoritative Server model. Data synchronization is performed via `System.Text.Json` serialization.
 </details>
-
-```mermaid
-classDiagram
-    class Item {
-        <<abstract>>
-        +Symbol char*
-        +Name string*
-        +GetDamage() int
-        +EquipLeft(Player p) void
-        +EquipRight(Player p) void
-        +UnEquip(Player p) void
-        +Drop(Player p, Cell cell) void
-        +PickUp(Player p, Cell cell) void
-    }
-    class Weapon {
-        <<abstract>>
-        +int damage
-        +GetDamage() int
-    }
-    class OneHandedWeapon { <<abstract>> }
-    class TwoHandedWeapon { <<abstract>> }
-    class SlottedWeapon {
-        -List~ISlotable~ slots
-        +GetDamage() int
-        +AddModifier(ISlotable component) void
-    }
-    class SocketAdapter {
-        -List~ISlotable~ embeddedSlots
-        +GetDamageModifier() int
-        +GetStatModifier() int
-    }
-    class PassiveItem {
-        +int statBonus
-        +GetStatModifier() int
-    }
-
-    Item <|-- Weapon : Polymorphic Extension
-    Weapon <|-- OneHandedWeapon
-    Weapon <|-- TwoHandedWeapon
-    Weapon <|-- SlottedWeapon
-    SlottedWeapon "1" *-- "many" SocketAdapter : Composite Nesting
-    SocketAdapter "1" *-- "many" PassiveItem : Holds Gemstones/Runes
-    SocketAdapter "1" *-- "many" SocketAdapter : Recursive Mounting
-```
 ## 🔧 Technical Setup
 
 **System Requirements:**

@@ -238,7 +238,126 @@ classDiagram
 <summary><strong>Stage 3: Polymorphic Combat System</strong></summary>
 Developed a combat model featuring weapon categories (Heavy, Light, Magic) and attack styles (Normal, Stealth, Magic). Damage scaling is strictly polymorphic.
 </details>
+```mermaid
+classDiagram
+    direction TB
 
+    %% --- DECORATOR PATTERN: MODYFIKATORY PRZEDMIOTÓW ---
+    class Item {
+        <<abstract>>
+        +string Name*
+        +GetDamage() int
+        +GetStatBonus() int
+    }
+
+    class ItemModifier {
+        <<abstract>>
+        #Item _wrappee
+        +string Name
+        +GetDamage() int
+        +GetStatBonus() int
+        +ItemModifier(Item wrappee)
+    }
+
+    class DamageModifier {
+        -int _damageBonus
+        +string Name
+        +GetDamage() int
+    }
+
+    class StatModifier {
+        -int _statBonus
+        -string _statType
+        +string Name
+        +GetStatBonus() int
+    }
+
+    Item <|-- ItemModifier : Dziedziczenie (Decorator)
+    ItemModifier o-- Item : Kompozycja (Owija bazowy Item)
+    ItemModifier <|-- DamageModifier
+    ItemModifier <|-- StatModifier
+
+    %% --- KATEGORIE BRONI ---
+    class Weapon {
+        <<abstract>>
+    }
+
+    class HeavyWeapon {
+        <<abstract>>
+        +Accept(IAttackStrategy strategy, Player p) int
+    }
+
+    class LightWeapon {
+        <<abstract>>
+        +Accept(IAttackStrategy strategy, Player p) int
+    }
+
+    class MagicWeapon {
+        <<abstract>>
+        +Accept(IAttackStrategy strategy, Player p) int
+    }
+
+    Item <|-- Weapon
+    Weapon <|-- HeavyWeapon
+    Weapon <|-- LightWeapon
+    Weapon <|-- MagicWeapon
+
+    %% --- SYSTEM WALKI I WROGOWIE ---
+    class Enemy {
+        +int HealthPoints
+        +int AttackValue
+        +int ArmorPoints
+        +TakeDamage(int damage) void
+        +PerformCounterAttack(Player p) void
+    }
+
+    class Player {
+        +PerformAttack(Enemy target, IAttackStrategy strategy) void
+        +TakeDamage(int incomingDamage, IAttackStrategy lastUsedStrategy) void
+    }
+
+    %% --- VISITOR / STRATEGY PATTERN: MECHANIKA ATAKU I OBRONY ---
+    class IAttackStrategy {
+        <<interface>>
+        +CalculateDamage(HeavyWeapon w, Player p) int
+        +CalculateDamage(LightWeapon w, Player p) int
+        +CalculateDamage(MagicWeapon w, Player p) int
+        +CalculateDefense(Weapon w, Player p) int
+    }
+
+    class NormalAttack {
+        +CalculateDamage(HeavyWeapon w, Player p) int
+        +CalculateDamage(LightWeapon w, Player p) int
+        +CalculateDamage(MagicWeapon w, Player p) int
+        +CalculateDefense(Weapon w, Player p) int
+    }
+
+    class StealthAttack {
+        +CalculateDamage(HeavyWeapon w, Player p) int
+        +CalculateDamage(LightWeapon w, Player p) int
+        +CalculateDamage(MagicWeapon w, Player p) int
+        +CalculateDefense(Weapon w, Player p) int
+    }
+
+    class MagicAttack {
+        +CalculateDamage(HeavyWeapon w, Player p) int
+        +CalculateDamage(LightWeapon w, Player p) int
+        +CalculateDamage(MagicWeapon w, Player p) int
+        +CalculateDefense(Weapon w, Player p) int
+    }
+
+    IAttackStrategy <|.. NormalAttack : Atak zwykły
+    IAttackStrategy <|.. StealthAttack : Atak skryty
+    IAttackStrategy <|.. MagicAttack : Atak magiczny
+    
+    Player --> IAttackStrategy : Wybiera rodzaj ataku
+    Player --> Enemy : Inicjuje walkę
+    
+    %% Double Dispatch representation (Visitor)
+    IAttackStrategy ..> HeavyWeapon : Oblicza na podst. Siły
+    IAttackStrategy ..> LightWeapon : Oblicza na podst. Zręczności
+    IAttackStrategy ..> MagicWeapon : Oblicza na podst. Mądrości
+```
 <details>
 <summary><strong>Stage 4: Configuration & Event Logging</strong></summary>
 System initialization via external JSON/INI files. Implemented a thread-safe event log capturing all critical game state changes.

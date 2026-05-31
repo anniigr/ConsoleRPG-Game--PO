@@ -238,101 +238,6 @@ classDiagram
 <summary><strong>Stage 3: Polymorphic Combat System</strong></summary>
 Developed a combat model featuring weapon categories (Heavy, Light, Magic) and attack styles (Normal, Stealth, Magic). Damage scaling is strictly polymorphic.
 </details>
-```mermaid
-classDiagram
-    direction TB
-
-    class Item {
-        <<abstract>>
-        +Name string
-        +GetDamage() int
-        +GetStatBonus() int
-    }
-
-    class ItemModifier {
-        <<abstract>>
-        #_wrappee Item
-        +Name string
-        +GetDamage() int
-        +GetStatBonus() int
-    }
-
-    class DamageModifier {
-        -_damageBonus int
-        +GetDamage() int
-    }
-
-    class StatModifier {
-        -_statBonus int
-        -_statType string
-        +GetStatBonus() int
-    }
-
-    Item <|-- ItemModifier
-    ItemModifier o-- Item
-    ItemModifier <|-- DamageModifier
-    ItemModifier <|-- StatModifier
-
-    class Weapon {
-        <<abstract>>
-    }
-
-    class HeavyWeapon {
-        <<abstract>>
-        +Accept(strategy, player) int
-    }
-
-    class LightWeapon {
-        <<abstract>>
-        +Accept(strategy, player) int
-    }
-
-    class MagicWeapon {
-        <<abstract>>
-        +Accept(strategy, player) int
-    }
-
-    Item <|-- Weapon
-    Weapon <|-- HeavyWeapon
-    Weapon <|-- LightWeapon
-    Weapon <|-- MagicWeapon
-
-    class Enemy {
-        +HealthPoints int
-        +AttackValue int
-        +ArmorPoints int
-        +TakeDamage(damage) void
-        +PerformCounterAttack(player) void
-    }
-
-    class Player {
-        +PerformAttack(enemy, strategy) void
-        +TakeDamage(damage, strategy) void
-    }
-
-    class IAttackStrategy {
-        <<interface>>
-        +CalculateDamage(HeavyWeapon, Player) int
-        +CalculateDamage(LightWeapon, Player) int
-        +CalculateDamage(MagicWeapon, Player) int
-        +CalculateDefense(Weapon, Player) int
-    }
-
-    class NormalAttack
-    class StealthAttack
-    class MagicAttack
-
-    IAttackStrategy <|.. NormalAttack
-    IAttackStrategy <|.. StealthAttack
-    IAttackStrategy <|.. MagicAttack
-
-    Player --> IAttackStrategy
-    Player --> Enemy
-
-    IAttackStrategy ..> HeavyWeapon
-    IAttackStrategy ..> LightWeapon
-    IAttackStrategy ..> MagicWeapon
-```
 
 <details>
 <summary><strong>Stage 4: Configuration & Event Logging</strong></summary>
@@ -348,6 +253,50 @@ Implemented noise propagation algorithms and collective NPC behaviors. Sound wav
 <summary><strong>Stage 6: Networked Multiplayer</strong></summary>
 Migrated to an Authoritative Server model. Data synchronization is performed via `System.Text.Json` serialization.
 </details>
+
+```mermaid
+classDiagram
+    class Item {
+        <<abstract>>
+        +Symbol char*
+        +Name string*
+        +GetDamage() int
+        +EquipLeft(Player p) void
+        +EquipRight(Player p) void
+        +UnEquip(Player p) void
+        +Drop(Player p, Cell cell) void
+        +PickUp(Player p, Cell cell) void
+    }
+    class Weapon {
+        <<abstract>>
+        +int damage
+        +GetDamage() int
+    }
+    class OneHandedWeapon { <<abstract>> }
+    class TwoHandedWeapon { <<abstract>> }
+    class SlottedWeapon {
+        -List~ISlotable~ slots
+        +GetDamage() int
+        +AddModifier(ISlotable component) void
+    }
+    class SocketAdapter {
+        -List~ISlotable~ embeddedSlots
+        +GetDamageModifier() int
+        +GetStatModifier() int
+    }
+    class PassiveItem {
+        +int statBonus
+        +GetStatModifier() int
+    }
+
+    Item <|-- Weapon : Polymorphic Extension
+    Weapon <|-- OneHandedWeapon
+    Weapon <|-- TwoHandedWeapon
+    Weapon <|-- SlottedWeapon
+    SlottedWeapon "1" *-- "many" SocketAdapter : Composite Nesting
+    SocketAdapter "1" *-- "many" PassiveItem : Holds Gemstones/Runes
+    SocketAdapter "1" *-- "many" SocketAdapter : Recursive Mounting
+```
 ## 🔧 Technical Setup
 
 **System Requirements:**
@@ -358,10 +307,8 @@ Migrated to an Authoritative Server model. Data synchronization is performed via
 1. **Start the Server:**
    ```bash
    dotnet run -- --server 5555
- ```
 2. **Connect a Client:**
    ```bash
    dotnet run -- --client 127.0.0.1:5555
-    ```
 ---
 Developed as a project for Object-Oriented Programming (Warsaw University of Technology).

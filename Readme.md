@@ -80,4 +80,5 @@ Migrated to an Authoritative Server model. Data synchronization is performed via
 2. **Connect a Client:**
    ```bash
    dotnet run -- --client 127.0.0.1:5555
-   Developed as a project for Object-Oriented Programming (Warsaw University of Technology).
+---
+Developed as a project for Object-Oriented Programming (Warsaw University of Technology).

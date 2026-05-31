@@ -1,13 +1,14 @@
 # ⚔️ Console RPG: TCP Multiplayer & MVC Architecture
-<p align="center">
-  <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExb2tyMGx6cm40eHYyNHZkNHRtaTd5OTU4OXZudmNhNTZwdWtzODk2YSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l9eJw5IqiSDwVzb4bh/giphy.gif" width="400px" />
-</p>
+
 <p align="center">
   <img src="https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white" alt="C#"/>
   <img src="https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET"/>
   <img src="https://img.shields.io/badge/Architecture-MVC-blue?style=for-the-badge" alt="Architecture: MVC"/>
   <img src="https://img.shields.io/badge/Networking-TCP%20%2F%20JSON-orange?style=for-the-badge" alt="TCP Network"/>
   <img src="https://img.shields.io/badge/Clean%20Code-No%20RTTI-success?style=for-the-badge" alt="Clean Code"/>
+</p>
+<p align="center">
+  <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExb2tyMGx6cm40eHYyNHZkNHRtaTd5OTU4OXZudmNhNTZwdWtzODk2YSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l9eJw5IqiSDwVzb4bh/giphy.gif" width="400px" />
 </p>
 
 ## 📖 Overview

@@ -26,7 +26,6 @@ The core engineering constraint of this project was absolute adherence to **Obje
 * **Controller:** Validates player input and routes actions to the Model. Each client session is handled by an isolated controller instance.
 * **Concurrency & Networking:** Implemented using `TcpListener` and `TcpClient`. Thread safety is ensured through `lock` mechanisms and concurrent collections, allowing the server to handle multiple simultaneous TCP requests without race conditions.
 
----
 
 ## 🧩 Applied Design Patterns
 

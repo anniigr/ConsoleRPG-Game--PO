@@ -43,7 +43,9 @@ The core engineering constraint of this project was absolute adherence to Object
 <details>
 <summary><strong>Stages 1–2: Engine & Procedural Generation</strong></summary>
 Implemented a grid-based engine with modular dungeon generation using strategy-based building blocks (halls, rooms, artifacts).
-  ```mermaid
+</details>
+
+```mermaid
 classDiagram
     direction TOP_BOTTOM
     class Map {
@@ -100,9 +102,6 @@ classDiagram
     Terrain <|-- Wall : Inheritance
     Player "1" o-- "many" Item : Holds Inventory
 ```
-</details>
-
-
 <details>
 <summary><strong>Stage 3: Polymorphic Combat System</strong></summary>
 Developed a combat model featuring weapon categories (Heavy, Light, Magic) and attack styles (Normal, Stealth, Magic). Damage scaling is strictly polymorphic.

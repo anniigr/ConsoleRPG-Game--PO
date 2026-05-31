@@ -122,6 +122,7 @@ Migrated to an Authoritative Server model. Data synchronization is performed via
 </details>
 ---
 ---
+```mermaid
 classDiagram
     class Item {
         <<abstract>>

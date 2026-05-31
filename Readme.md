@@ -47,7 +47,30 @@ Implemented a grid-based engine with modular dungeon generation using strategy-b
 
 ```mermaid
 classDiagram
-    direction TOP_BOTTOM
+    direction TB
+
+    %% --- ENGINE & CORE ---
+    class GameEngine {
+        -Map map
+        -Player player
+        -Renderer renderer
+        -bool isRunning
+        -bool isInventoryMode
+        -int invCursor
+        +Run() void
+        -HandleInput() void
+        -HandleMapInput(ConsoleKey key) void
+        -HandleInventoryInput(ConsoleKey key) void
+    }
+
+    class Renderer {
+        -Map map
+        -Player player
+        +DrawFrame(bool isInventoryMode, int invCursor) void
+        -GetLine(int lineIndex, string floorInfo, bool isInventoryMode, int invCursor) string
+    }
+
+    %% --- WORLD ---
     class Map {
         +int Width
         +int Height
@@ -55,24 +78,30 @@ classDiagram
         +InitializeMap() void
         +GetCell(int i, int j) Cell
     }
+
     class Cell {
         +Terrain Terrain
         +List~Item~ Items
         +GetDrawSymbol() char
     }
+
     class Terrain {
         <<abstract>>
-        +Symbol char*
+        +char Symbol*
         +IsPassable() bool*
     }
+
     class Floor {
-        +Symbol : ' '
-        +IsPassable() : true
+        +char Symbol
+        +IsPassable() bool
     }
+
     class Wall {
-        +Symbol : '█'
-        +IsPassable() : false
+        +char Symbol
+        +IsPassable() bool
     }
+
+    %% --- ENTITIES ---
     class Player {
         +int X
         +int Y
@@ -84,23 +113,126 @@ classDiagram
         +int Wisdom
         +int Coins
         +int Gold
-        +Item LeftHand
-        +Item RightHand
+        +Item? LeftHand
+        +Item? RightHand
         +List~Item~ Inventory
-        +Move(int dx, int dy, Map map) void
-        +PickUp(Map map) void
-        +DropItem(Item item, Map map) void
+        +string LogMessage
         +UnequipLeft() void
         +UnequipRight() void
         +GetTotalDamage() int
+        +Move(int dx, int dy, Map map) void
+        +PickUp(Map map) void
+        +DropItem(Item item, Map map) void
     }
 
-    Map "1" *-- "many" Cell : Composition
-    Cell "1" o-- "many" Item : Aggregation
-    Cell --> Terrain : Strategy-like Link
-    Terrain <|-- Floor : Inheritance
-    Terrain <|-- Wall : Inheritance
-    Player "1" o-- "many" Item : Holds Inventory
+    %% --- ITEM BASE CLASSES ---
+    class Item {
+        <<abstract>>
+        +char Symbol*
+        +string Name*
+        +GetDamage() int
+        +EquipLeft(Player p) void
+        +EquipRight(Player p) void
+        +UnEquip(Player p) void
+        +Drop(Player p, Cell cell) void
+        +PickUp(Player p, Cell cell) void
+    }
+
+    class Weapon {
+        <<abstract>>
+        +int damage
+        +GetDamage() int
+    }
+
+    class OneHandedWeapon {
+        <<abstract>>
+        +EquipLeft(Player p) void
+        +EquipRight(Player p) void
+        +UnEquip(Player p) void
+    }
+
+    class TwoHandedWeapon {
+        <<abstract>>
+        -EquipBoth(Player p) void
+        +EquipLeft(Player p) void
+        +EquipRight(Player p) void
+        +UnEquip(Player p) void
+    }
+
+    class Currency {
+        <<abstract>>
+        +ApplyToWallet(Player p)*
+        +PickUp(Player p, Cell cell) void
+    }
+
+    %% --- SPECIFIC ITEMS ---
+    class Sword {
+        +char Symbol
+        +string Name
+    }
+    class Axe {
+        +char Symbol
+        +string Name
+    }
+    class Greatsword {
+        +char Symbol
+        +string Name
+    }
+    class Bone {
+        +char Symbol
+        +string Name
+    }
+    class Mug {
+        +char Symbol
+        +string Name
+    }
+    class Rope {
+        +char Symbol
+        +string Name
+    }
+    class Coin {
+        +char Symbol
+        +string Name
+        +ApplyToWallet(Player p) void
+    }
+    class Gold {
+        +char Symbol
+        +string Name
+        +ApplyToWallet(Player p) void
+    }
+
+    %% --- RELATIONSHIPS ---
+    GameEngine *-- Map : "1 to 1"
+    GameEngine *-- Player : "1 to 1"
+    GameEngine *-- Renderer : "1 to 1"
+    
+    Renderer o-- Map : "Uses"
+    Renderer o-- Player : "Uses"
+    
+    Map "1" *-- "many" Cell : "Composition"
+    Cell "1" o-- "many" Item : "Aggregation"
+    Cell --> Terrain : "Holds"
+    
+    Terrain <|-- Floor : "Inherits"
+    Terrain <|-- Wall : "Inherits"
+    
+    Player "1" o-- "many" Item : "Inventory / Hands"
+
+    Item <|-- Weapon
+    Item <|-- Currency
+    Item <|-- Bone
+    Item <|-- Mug
+    Item <|-- Rope
+
+    Weapon <|-- OneHandedWeapon
+    Weapon <|-- TwoHandedWeapon
+    
+    OneHandedWeapon <|-- Sword
+    OneHandedWeapon <|-- Axe
+    TwoHandedWeapon <|-- Greatsword
+
+    Currency <|-- Coin
+    Currency <|-- Gold
 ```
 <details>
 <summary><strong>Stage 3: Polymorphic Combat System</strong></summary>

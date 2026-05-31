@@ -358,6 +358,7 @@ classDiagram
     IAttackStrategy ..> LightWeapon : Oblicza na podst. Zręczności
     IAttackStrategy ..> MagicWeapon : Oblicza na podst. Mądrości
 ```
+
 <details>
 <summary><strong>Stage 4: Configuration & Event Logging</strong></summary>
 System initialization via external JSON/INI files. Implemented a thread-safe event log capturing all critical game state changes.

@@ -163,6 +163,7 @@ classDiagram
     SlottedWeapon "1" *-- "many" SocketAdapter : Composite Nesting
     SocketAdapter "1" *-- "many" PassiveItem : Holds Gemstones/Runes
     SocketAdapter "1" *-- "many" SocketAdapter : Recursive Mounting
+```
 ## 🔧 Technical Setup
 
 **System Requirements:**

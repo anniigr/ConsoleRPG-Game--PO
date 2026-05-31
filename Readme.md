@@ -43,6 +43,62 @@ The core engineering constraint of this project was absolute adherence to Object
 details>
 <summary><strong>Stages 1–2: Engine & Procedural Generation</strong></summary>
 Implemented a grid-based engine with modular dungeon generation using strategy-based building blocks (halls, rooms, artifacts).
+```mermaid
+classDiagram
+    direction TOP_BOTTOM
+    class Map {
+        +int Width
+        +int Height
+        -Cell[,] grid
+        +InitializeMap() void
+        +GetCell(int i, int j) Cell
+    }
+    class Cell {
+        +Terrain Terrain
+        +List~Item~ Items
+        +GetDrawSymbol() char
+    }
+    class Terrain {
+        <<abstract>>
+        +Symbol char*
+        +IsPassable() bool*
+    }
+    class Floor {
+        +Symbol : ' '
+        +IsPassable() : true
+    }
+    class Wall {
+        +Symbol : '█'
+        +IsPassable() : false
+    }
+    class Player {
+        +int X
+        +int Y
+        +int Strength
+        +int Dexterity
+        +int Health
+        +int Luck
+        +int Aggression
+        +int Wisdom
+        +int Coins
+        +int Gold
+        +Item LeftHand
+        +Item RightHand
+        +List~Item~ Inventory
+        +Move(int dx, int dy, Map map) void
+        +PickUp(Map map) void
+        +DropItem(Item item, Map map) void
+        +UnequipLeft() void
+        +UnequipRight() void
+        +GetTotalDamage() int
+    }
+
+    Map "1" *-- "many" Cell : Composition
+    Cell "1" o-- "many" Item : Aggregation
+    Cell --> Terrain : Strategy-like Link
+    Terrain <|-- Floor : Inheritance
+    Terrain <|-- Wall : Inheritance
+    Player "1" o-- "many" Item : Holds Inventory
 </details>
 
 <details>

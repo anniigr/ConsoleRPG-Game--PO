@@ -684,7 +684,7 @@ classDiagram
 </details>
 <details>
 <summary><strong>Stage 7: in progress ... </strong></summary>
-
+</details>
 
 ## 🔧 Technical Setup
 

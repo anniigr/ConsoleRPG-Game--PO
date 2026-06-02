@@ -248,123 +248,117 @@ classDiagram
 
 ```mermaid
 classDiagram
-    direction TB
-
-    %% --- DECORATOR PATTERN: MODYFIKATORY PRZEDMIOTÓW ---
+    %% ==========================================
+    %% DECORATOR PATTERN (Item Modifiers)
+    %% ==========================================
     class Item {
         <<abstract>>
-        +string Name*
-        +GetDamage() int
-        +GetStatBonus() int
+        +GetName() String*
+        +GetDamage() int*
+        +Accept(visitor: IAttackVisitor, player: Player) CombatResult*
     }
 
-    class ItemModifier {
-        <<abstract>>
-        #Item _wrappee
-        +string Name
-        +GetDamage() int
-        +GetStatBonus() int
-        +ItemModifier(Item wrappee)
-    }
-
-    class DamageModifier {
-        -int _damageBonus
-        +string Name
-        +GetDamage() int
-    }
-
-    class StatModifier {
-        -int _statBonus
-        -string _statType
-        +string Name
-        +GetStatBonus() int
-    }
-
-    Item <|-- ItemModifier : Dziedziczenie (Decorator)
-    ItemModifier o-- Item : Kompozycja (Owija bazowy Item)
-    ItemModifier <|-- DamageModifier
-    ItemModifier <|-- StatModifier
-
-    %% --- KATEGORIE BRONI ---
     class Weapon {
         <<abstract>>
+        #baseDamage: int
+        +GetDamage() int
     }
+    Item <|-- Weapon
 
     class HeavyWeapon {
-        <<abstract>>
-        +Accept(IAttackStrategy strategy, Player p) int
+        +Accept(visitor: IAttackVisitor, player: Player) CombatResult
     }
-
     class LightWeapon {
-        <<abstract>>
-        +Accept(IAttackStrategy strategy, Player p) int
+        +Accept(visitor: IAttackVisitor, player: Player) CombatResult
     }
-
     class MagicWeapon {
-        <<abstract>>
-        +Accept(IAttackStrategy strategy, Player p) int
+        +Accept(visitor: IAttackVisitor, player: Player) CombatResult
     }
-
-    Item <|-- Weapon
     Weapon <|-- HeavyWeapon
     Weapon <|-- LightWeapon
     Weapon <|-- MagicWeapon
 
-    %% --- SYSTEM WALKI I WROGOWIE ---
-    class Enemy {
-        +int HealthPoints
-        +int AttackValue
-        +int ArmorPoints
-        +TakeDamage(int damage) void
-        +PerformCounterAttack(Player p) void
+    class ItemDecorator {
+        <<abstract>>
+        #_decoratedItem: Item
+        +GetName() String
+        +GetDamage() int
+        +Accept(visitor: IAttackVisitor, player: Player) CombatResult
     }
+    Item <|-- ItemDecorator
+    ItemDecorator --> Item : wraps (composition)
 
-    class Player {
-        +PerformAttack(Enemy target, IAttackStrategy strategy) void
-        +TakeDamage(int incomingDamage, IAttackStrategy lastUsedStrategy) void
+    class StrongDecorator {
+        +GetDamage() int
+        +GetName() String
     }
+    class UnluckyDecorator {
+        +GetName() String
+    }
+    ItemDecorator <|-- StrongDecorator
+    ItemDecorator <|-- UnluckyDecorator
 
-    %% --- VISITOR / STRATEGY PATTERN: MECHANIKA ATAKU I OBRONY ---
-    class IAttackStrategy {
+    %% ==========================================
+    %% VISITOR PATTERN (Attack and Combat Strategies)
+    %% ==========================================
+    class IAttackVisitor {
         <<interface>>
-        +CalculateDamage(HeavyWeapon w, Player p) int
-        +CalculateDamage(LightWeapon w, Player p) int
-        +CalculateDamage(MagicWeapon w, Player p) int
-        +CalculateDefense(Weapon w, Player p) int
+        +VisitHeavy(weapon: HeavyWeapon, player: Player) CombatResult
+        +VisitLight(weapon: LightWeapon, player: Player) CombatResult
+        +VisitMagic(weapon: MagicWeapon, player: Player) CombatResult
+        +VisitRegularItem(item: Item, player: Player) CombatResult
     }
 
     class NormalAttack {
-        +CalculateDamage(HeavyWeapon w, Player p) int
-        +CalculateDamage(LightWeapon w, Player p) int
-        +CalculateDamage(MagicWeapon w, Player p) int
-        +CalculateDefense(Weapon w, Player p) int
+        +VisitHeavy(weapon: HeavyWeapon, player: Player) CombatResult
+        +VisitLight(weapon: LightWeapon, player: Player) CombatResult
+        +VisitMagic(weapon: MagicWeapon, player: Player) CombatResult
+        +VisitRegularItem(item: Item, player: Player) CombatResult
     }
-
     class StealthAttack {
-        +CalculateDamage(HeavyWeapon w, Player p) int
-        +CalculateDamage(LightWeapon w, Player p) int
-        +CalculateDamage(MagicWeapon w, Player p) int
-        +CalculateDefense(Weapon w, Player p) int
+        +VisitHeavy(weapon: HeavyWeapon, player: Player) CombatResult
+        +VisitLight(weapon: LightWeapon, player: Player) CombatResult
+        +VisitMagic(weapon: MagicWeapon, player: Player) CombatResult
+        +VisitRegularItem(item: Item, player: Player) CombatResult
     }
-
     class MagicAttack {
-        +CalculateDamage(HeavyWeapon w, Player p) int
-        +CalculateDamage(LightWeapon w, Player p) int
-        +CalculateDamage(MagicWeapon w, Player p) int
-        +CalculateDefense(Weapon w, Player p) int
+        +VisitHeavy(weapon: HeavyWeapon, player: Player) CombatResult
+        +VisitLight(weapon: LightWeapon, player: Player) CombatResult
+        +VisitMagic(weapon: MagicWeapon, player: Player) CombatResult
+        +VisitRegularItem(item: Item, player: Player) CombatResult
+    }
+    IAttackVisitor <|.. NormalAttack
+    IAttackVisitor <|.. StealthAttack
+    IAttackVisitor <|.. MagicAttack
+
+    %% ==========================================
+    %% ENTITIES AND GAMEPLAY SYSTEM
+    %% ==========================================
+    class Player {
+        +Strength: int
+        +Agility: int
+        +Wisdom: int
+        +Luck: int
+        +Health: int
+        -equippedItem: Item
+        +GetEquippedItem() Item
+    }
+    class Enemy {
+        +Health: int
+        +AttackValue: int
+        +Armor: int
+        +TakeDamage(amount: int)
+    }
+    class CombatResult {
+        +DamageDealt: int
+        +DefenseValue: int
     }
 
-    IAttackStrategy <|.. NormalAttack : Atak zwykły
-    IAttackStrategy <|.. StealthAttack : Atak skryty
-    IAttackStrategy <|.. MagicAttack : Atak magiczny
-    
-    Player --> IAttackStrategy : Wybiera rodzaj ataku
-    Player --> Enemy : Inicjuje walkę
-    
-    %% Double Dispatch representation (Visitor)
-    IAttackStrategy ..> HeavyWeapon : Oblicza na podst. Siły
-    IAttackStrategy ..> LightWeapon : Oblicza na podst. Zręczności
-    IAttackStrategy ..> MagicWeapon : Oblicza na podst. Mądrości
+    CombatResult <-- IAttackVisitor : creates
+    Player --> Item : owns and equips
+    HeavyWeapon ..> IAttackVisitor : passes itself (this)
+    LightWeapon ..> IAttackVisitor : passes itself (this)
+    MagicWeapon ..> IAttackVisitor : passes itself (this)
 
 ```
 </details>
@@ -374,132 +368,90 @@ classDiagram
 System initialization via external JSON/INI files. Implemented a thread-safe event log capturing all critical game state changes.
   
 ```mermaid
-  classDiagram
-    direction TB
-
-    %% --- CONFIGURATION SYSTEM (SINGLETON PATTERN) ---
-    class ConfigManager {
-        -static ConfigManager _instance
-        -static readonly object _lock
-        -GameConfig _config
-        -ConfigManager()
-        +static ConfigManager Instance$
-        +LoadConfiguration(string filePath) void
-        +GetPlayerName() string
-        +GetThemeName() string
-        +GetLogFilePath() string
-    }
-
+ classDiagram
+    %% ==========================================
+    %% KONFIGURACJA (Wymaganie: wczytywanie pliku)
+    %% ==========================================
     class GameConfig {
-        +string PlayerName
-        +string DungeonTheme
-        +string LogPath
+        +String PlayerName
+        +String Theme
+        +String FileName
     }
-    
-    ConfigManager *-- GameConfig : Composition (Holds loaded data)
+    class ConfigManager {
+        +LoadConfig() GameConfig$
+    }
+    ConfigManager ..> GameConfig : tworzy
 
-    %% --- EVENT LOGGER SYSTEM (SINGLETON & STRATEGY PATTERNS) ---
+    %% ==========================================
+    %% DZIENNIK ZDARZEŃ (Wzorzec: Singleton + Interfejs)
+    %% ==========================================
     class ILogger {
         <<interface>>
-        +Log(string message) void
-        +GetRecentLogs(int count) List~string~
-        +GetAllLogs() List~string~
-    }
-
-    class GameLogger {
-        -static GameLogger _instance
-        -static readonly object _lock
-        -List~string~ _logsHistory
-        -StreamWriter _fileWriter
-        -GameLogger()
-        +static GameLogger Instance$
-        +Initialize(string playerName, string logPath) void
-        +Log(string message) void
-        +GetRecentLogs(int count) List~string~
-        +GetAllLogs() List~string~
-        -CreateUniqueLogFile(string name, string path) void
+        +Log(message: String)
+        +GetAllLogs() List~String~
+        +GetLastLog() String
+        +GetLogFilePath() String
     }
     
-    ILogger <|.. GameLogger : Realization (Allows easy logger swapping)
+    class GameLogger {
+        -GameLogger _instance$
+        +CurrentPlayerId int
+        +GetInstance() GameLogger$
+        +Log(message: String)
+        +ExtractMergedLogs(id: int)
+    }
+    
+    class FileAndMemoryLogger {
+        -_logs: List~String~
+        -_filePath: String
+        +Log(message: String)
+    }
+    
+    class FileLogger {
+        -_filePath: String
+        +Log(message: String)
+    }
 
-    %% --- DUNGEON THEME SYSTEM (ABSTRACT FACTORY / TEMPLATE PATTERN) ---
-    class IDungeonTheme {
+    ILogger <|.. GameLogger
+    ILogger <|.. FileAndMemoryLogger
+    ILogger <|.. FileLogger
+
+    %% ==========================================
+    %% MOTYWY LOCHU (Wzorzec: Abstract Factory)
+    %% ==========================================
+    class IDungeonThemeFactory {
         <<interface>>
-        +string WelcomeMessage
-        +IMapGenerationStrategy GenerationStrategy
-        +GetThemeItemPool() List~Item~
-        +GetSpecialArtifact() Item
-        +GetThemeEnemyNames() List~string~
+        +GetGreetingMessage() String
+        +GetSize() Tuple~int, int~
+        +CreateGenerationStrategy() IEnumerable~IDungeonStep~
+        +CreateItemPool() IEnumerable~Func~Item~~
+        +CreateArtifact() Item
+        +CreateEnemyPool() IEnumerable~SpeciesSpawnDefinition~
     }
 
-    class AncientLibraryTheme {
-        +string WelcomeMessage : "The smell of old books fills the air..."
-        +IMapGenerationStrategy GenerationStrategy
-        +GetThemeItemPool() List~Item~
-        +GetSpecialArtifact() Item : "Black Wand"
-        +GetThemeEnemyNames() List~string~
+    class VaultThemeFactory
+    class LibraryThemeFactory
+    class SciFiThemeFactory
+
+    IDungeonThemeFactory <|.. VaultThemeFactory
+    IDungeonThemeFactory <|.. LibraryThemeFactory
+    IDungeonThemeFactory <|.. SciFiThemeFactory
+
+    class ThemeSelector {
+        +SelectTheme(themeName: String) IDungeonThemeFactory$
+    }
+    
+    class DungeonDirector {
+        +CreateThemeMap(theme: IDungeonThemeFactory) Map
     }
 
-    class IndustrialForgeTheme {
-        +string WelcomeMessage : "The grinding of metal echoes from walls..."
-        +IMapGenerationStrategy GenerationStrategy
-        +GetThemeItemPool() List~Item~
-        +GetSpecialArtifact() Item : "Blaster"
-        +GetThemeEnemyNames() List~string~
-    }
-
-    class GoldenVaultTheme {
-        +string WelcomeMessage : "You feel an itch in your wallet..."
-        +IMapGenerationStrategy GenerationStrategy
-        +GetThemeItemPool() List~Item~
-        +GetSpecialArtifact() Item : "Lucky Bag of Coins"
-        +GetThemeEnemyNames() List~string~
-    }
-
-    IDungeonTheme <|.. AncientLibraryTheme
-    IDungeonTheme <|.. IndustrialForgeTheme
-    IDungeonTheme <|.. GoldenVaultTheme
-
-    %% --- DUNGEON GENERATION GENERATOR (STRATEGY PATTERN) ---
-    class IMapGenerationStrategy {
-        <<interface>>
-        +GenerateMapLayout(Map map) void
-    }
-
-    class MultipleCorridorsStrategy {
-        +GenerateMapLayout(Map map) void
-    }
-
-    class NumerousRoomsStrategy {
-        +GenerateMapLayout(Map map) void
-    }
-
-    class CentralVaultStrategy {
-        +GenerateMapLayout(Map map) void
-    }
-
-    IMapGenerationStrategy <|.. MultipleCorridorsStrategy
-    IMapGenerationStrategy <|.. NumerousRoomsStrategy
-    IMapGenerationStrategy <|.. CentralVaultStrategy
-
-    IDungeonTheme --> IMapGenerationStrategy : Strategy Link (Encapsulates layout logic)
-
-    %% --- REFACTORED ENGINE MECHANICS (STAGE 4 INTEGRATION) ---
-    class GameEngine {
-        -ILogger _logger
-        -IDungeonTheme _activeTheme
-        +HandleMapInput(ConsoleKey key) void
-        %% Pressing 'J' extracts full event log stream via ILogger
-    }
-
-    GameEngine ..> ConfigManager : Fetches profile and path specs on boot
-    GameEngine o-- IDungeonTheme : Orchestrates environment generation
-    GameEngine --> ILogger : Triggers logs universally (Invalid inputs, wall hits, etc.)
+    ThemeSelector ..> IDungeonThemeFactory : wybiera
+    DungeonDirector ..> IDungeonThemeFactory : używa do budowy
 ```
 </details>
 
 <details>
-<summary><strong>Stages 5 : AI Behavior & Acoustic Pathfinding</strong></summary>
+<summary><strong>Stage 5 : AI Behavior & Acoustic Pathfinding</strong></summary>
   
 This stage introduces reactive environmental systems and decoupled communication using a custom **Observer** pattern (strictly avoiding the C# event).
 * Herd AI (Collective Behavior): Enemies are grouped into species subjects. When an entity dies, it broadcasts its death to its kin before unregistering (e.g., Goblins lose stats, aggressive Skeletons gain stats).
@@ -508,78 +460,63 @@ This stage introduces reactive environmental systems and decoupled communication
 
 ```mermaid
 classDiagram
-    direction TB
+    class Map {
+        +EventManagerSound soundManager
+    }
 
-    %% --- CUSTOM OBSERVER: HERD BEHAVIOR ---
-    class ISpeciesObserver {
+    class EventManagerSound {
+        -List~IEventListenerSound~ _listeners
+        +Subscribe(listener)
+        +Unsubscribe(listener)
+        +Notify(x, y, range, map)
+    }
+
+    class EventManagerDeath {
+        -string _speciesName
+        -List~IEventListenerDeath~ _listeners
+        +Subscribe(listener)
+        +Notify()
+    }
+
+    class IEventListenerSound {
         <<interface>>
-        +OnKinDeath() void
+        +SoundProduced(dist, sourceX, sourceY)
     }
 
-    class SpeciesSubject {
-        -List~ISpeciesObserver~ _members
-        +Attach(ISpeciesObserver observer) void
-        +Detach(ISpeciesObserver observer) void
-        +NotifyDeath() void
-    }
-
-    %% --- CUSTOM OBSERVER: ACOUSTIC SYSTEM ---
-    class ISoundObserver {
+    class IEventListenerDeath {
         <<interface>>
-        +OnSoundHeard(int sourceX, int sourceY, int acousticRange) void
-    }
-
-    class SoundBroadcaster {
-        -List~ISoundObserver~ _listeners
-        +Subscribe(ISoundObserver listener) void
-        +Unsubscribe(ISoundObserver listener) void
-        +Broadcast(int sourceX, int sourceY, int range) void
-    }
-
-    %% --- ENTITIES & POLYMORPHISM ---
-    class Enemy {
-        <<abstract>>
-        #SpeciesSubject _mySpecies
-        #SoundBroadcaster _worldSoundChannel
-        +Die() void
-        +OnKinDeath() void
-        +OnSoundHeard(int sourceX, int sourceY, int acousticRange) void
-    }
-
-    class Goblin {
-        +OnKinDeath() void
-        %% Lowers stats (Cowardly)
-    }
-
-    class Skeleton {
-        +OnKinDeath() void
-        %% Increases stats (Aggressive)
+        +MemberDied(name)
     }
 
     class Player {
-        -SoundBroadcaster _worldSoundChannel
-        +PickUpWeapon(Weapon w) void
+        +SoundProduced(dist, sourceX, sourceY)
     }
 
-    class Weapon {
+    class Enemy {
         <<abstract>>
-        +GetNoiseRange() int
+        +EventManagerDeath group
+        +EventManagerSound enemiesManagerSound
+        +MemberDied(name)
+        +SoundProduced(dist, sourceX, sourceY)
     }
 
-    %% --- RELATIONSHIPS ---
-    ISpeciesObserver <|.. Enemy : Implements
-    ISoundObserver <|.. Enemy : Implements
+    class Zombie
+    class Skeleton
+    class Goblin
 
-    Enemy <|-- Goblin : Inherits
-    Enemy <|-- Skeleton : Inherits
+    Map "1" *-- "1" EventManagerSound
+    EventManagerSound o-- "*" IEventListenerSound
+    EventManagerDeath o-- "*" IEventListenerDeath
 
-    SpeciesSubject "1" o-- "many" ISpeciesObserver : Manages subscriptions
-    SoundBroadcaster "1" o-- "many" ISoundObserver : Manages subscriptions
+    IEventListenerSound <|.. Player
+    IEventListenerSound <|.. Enemy
+    IEventListenerDeath <|.. Enemy
 
-    Player --> SoundBroadcaster : Emits noise
-    Player ..> Weapon : Checks GetNoiseRange()
-    Enemy --> SpeciesSubject : Unsubscribes before destruction
-    Enemy --> SoundBroadcaster : Unsubscribes before destruction
+    Enemy <|-- Zombie
+    Enemy <|-- Skeleton
+    Enemy <|-- Goblin
+    
+    Enemy --> EventManagerDeath : triggers
 ```
 </details>
 
@@ -596,90 +533,96 @@ Transitions the monolithic engine into a networked multiplayer game (up to 9 con
 
 ```mermaid
 classDiagram
-    direction TB
-
-    %% --- MVC: MODEL (AUTHORITATIVE SOURCE OF TRUTH) ---
-    class GameModel {
-        +Map DungeonGrid
-        +Dictionary~int, Player~ ConnectedPlayers
-        +List~Enemy~ ActiveNPCs
-        +ApplyPlayerAction(PlayerActionDTO action) void
-        %% Completely decoupled from Console (Console.WriteLine forbidden)
+    %% ==========================================
+    %% MODEL LAYER (ConsoleRPG.Engine)
+    %% ==========================================
+    namespace Model_Layer_ConsoleRPG_Engine {
+        class GameEngine {
+            +Map Map
+            +Dictionary~int,Player~ Players
+            +bool IsServer
+            +ExecuteActionForPlayer(int id, ConsoleKey key)
+            +SyncStateFromDto(GameUpdateDto dto)
+            +ProcessEnemyTurn()
+        }
+        class Map {
+            +Cell[][] Grid
+            +SoundManager SoundManager
+            +GetCell(int x, int y)
+        }
+        class Player {
+            +int Id
+            +int X
+            +int Y
+            +int Health
+            +Move(int dx, int dy)
+            +TakeDamage(int amount)
+        }
     }
 
-    %% --- SERVER-SIDE COMPONENTS ---
-    class GameServer {
-        -TcpListener _listener
-        -GameModel _authoritativeModel
-        -List~ClientSessionHandler~ _sessions
-        +StartServer(int port) void
-        +AcceptConnections() void
-        +BroadcastState(GameStateDTO state) void
+    %% ==========================================
+    %% VIEW LAYER (ConsoleRPG.MVC.View)
+    %% ==========================================
+    namespace View_Layer_ConsoleRPG_View {
+        class IGameView {
+            <<interface>>
+            +Render(GameEngine engine)
+            +DisplayLog(string message)
+        }
+        class ConsoleView {
+            +Render(GameEngine engine)
+            -DrawMap(Map map)
+            -DrawUI(Dictionary players)
+        }
     }
 
-    class ClientSessionHandler {
-        -TcpClient _clientSocket
-        -GameModel _modelRef
-        +StartListeningTask() void
-        +ProcessIncomingJSON(string jsonInput) void
-        %% Runs on independent Thread/Task. Modifies Model using 'lock'.
+    %% ==========================================
+    %% CONTROLLER LAYER (ConsoleRPG.MVC.Controller)
+    %% ==========================================
+    namespace Controller_Layer_ConsoleRPG_Controller {
+        class ClientController {
+            -GameClient _client
+            -IGameView _view
+            +RunLoopAsync()
+            -HandleLocalInput(ConsoleKey key)
+        }
     }
 
-    %% --- CLIENT-SIDE COMPONENTS ---
-    class GameClient {
-        -TcpClient _serverConnection
-        -IView _viewRenderer
-        -IController _inputController
-        +Connect(string ip, int port) void
-        +ReceiveStateLoop() void
-        +SendActionJSON(PlayerActionDTO action) void
+    %% ==========================================
+    %% NETWORK LAYER (ConsoleRPG.Networking)
+    %% ==========================================
+    namespace Network_Layer_ConsoleRPG_Networking {
+        class GameServer {
+            -TcpListener _listener
+            -GameEngine _authoritativeEngine
+            -Dictionary~int,TcpClient~ _connectedClients
+            +StartServer()
+            +BroadcastState()
+            -HandleClientTrafficAsync(int playerId, TcpClient client)
+        }
+        class GameClient {
+            -TcpClient _socket
+            +GameEngine LocalEngine
+            +bool IsActive
+            +RunClientAsync()
+            +SendInput(ConsoleKey key)
+            -ReceiveUpdatesAsync()
+        }
     }
 
-    %% --- MVC: VIEW & CONTROLLER ---
-    class IView {
-        <<interface>>
-        +RenderState(GameStateDTO state) void
-    }
+    GameEngine "1" *-- "1" Map : Contains & Controls
+    GameEngine "1" *-- "0..*" Player : Manages Entities
 
-    class ConsoleView {
-        +RenderState(GameStateDTO state) void
-        %% Renders Map, Stats, and Logs based purely on JSON DTOs
-    }
+    ConsoleView ..|> IGameView : Implements
+ 
+    ConsoleView ..> GameEngine : Reads State to Draw
 
-    class IController {
-        <<interface>>
-        +ReadLocalInput() PlayerActionDTO
-    }
+    ClientController "1" --> "1" IGameView : Holds & Triggers Render
+    ClientController "1" --> "1" GameClient : Sends Decoded Input
 
-    class LocalInputController {
-        +ReadLocalInput() PlayerActionDTO
-        %% Parses W, A, S, D, E, J
-    }
-
-    %% --- DATA TRANSFER OBJECTS (System.Text.Json) ---
-    class GameStateDTO {
-        <<struct>>
-        %% Serialized Snapshot of the GameModel
-    }
-    class PlayerActionDTO {
-        <<struct>>
-        %% Serialized Command (e.g., Move UP, Drop Item)
-    }
-
-    %% --- RELATIONSHIPS ---
-    GameServer "1" *-- "1" GameModel : Owns & Maintains
-    GameServer "1" *-- "0..9" ClientSessionHandler : Manages up to 9 Players
-    ClientSessionHandler --> GameModel : Updates state (Thread-safe)
+    GameServer "1" *-- "1" GameEngine : Hosts Authoritative Model
     
-    GameClient "1" *-- "1" IView : Delegates Rendering
-    GameClient "1" *-- "1" IController : Fetches Commands
-    IView <|.. ConsoleView : Implements
-    IController <|.. LocalInputController : Implements
-
-    GameClient ..> GameStateDTO : Deserializes
-    GameClient ..> PlayerActionDTO : Serializes
-    
-    ClientSessionHandler <..> GameClient : TCP / JSON Network Boundary
+    GameClient "1" *-- "1" GameEngine : Hosts Local Synced Model
 ```
 </details>
 <details>

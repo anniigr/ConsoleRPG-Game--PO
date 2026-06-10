@@ -56,7 +56,7 @@ namespace ConsoleRPG
                 else if (pressedKey == ConsoleKey.K) systemMode = "CLIENT";
                 else
                 {
-                    Console.WriteLine("[BŁĄD] Wybrano nieobsługiwany klawisz wyboru. Zamykanie programu.");
+                    Console.WriteLine("[ERROR] Unsupported selection key chosen. Closing the program.");
                     return;
                 }
             }
@@ -66,7 +66,7 @@ namespace ConsoleRPG
                 GameServer server = new GameServer(operationalPort);
                 server.StartServer();
 
-                Console.WriteLine("[INFO] Serwer działa w tle. Naciśnij klawisz [ESC], aby zamknąć aplikację serwera.");
+                Console.WriteLine("[INFO] Server is running in the background. Press [ESC] to close the server application.");
                 while (true)
                 {
                     if (Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape)
@@ -80,22 +80,21 @@ namespace ConsoleRPG
             else if (systemMode == "CLIENT")
             {
                 Console.Clear();
-                Console.WriteLine("[KLIENT] Łączenie z serwerem...");
-                
+                Console.WriteLine("[CLIENT] Connecting to the server...");
                 GameClient client = new GameClient(remoteIpTarget, operationalPort);
                 await client.RunClientAsync();
 
                 if (!client.IsActive)
                 {
-                    Console.WriteLine("Nie udało się połączyć. Naciśnij dowolny klawisz...");
-                    Console.ReadKey();
+                   Console.WriteLine("Connection failed. Press any key...");
+                   Console.ReadKey();
                     return;
                 }
 
                 ClientController controller = new ClientController(client);
                 await controller.RunLoopAsync();
             }
-            }
+             }
         
     }
 }

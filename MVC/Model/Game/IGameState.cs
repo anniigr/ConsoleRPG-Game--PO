@@ -1,6 +1,7 @@
 using ConsoleRPG.Combat;
 using ConsoleRPG.Log;
 using ConsoleRPG.MVC.View;
+
 namespace ConsoleRPG.Engine;
 public interface IGameState
 {
@@ -70,6 +71,7 @@ public class InventoryState : IGameState
         _actions.AddAction(new DropItemAction(this));
         _actions.AddAction(new UnequipLeftAction());
         _actions.AddAction(new UnequipRightAction());
+        _actions.AddAction(new InsertIntoSlotAction(this));
         _actions.AddAction(new ChangeStateAction("Inventory", ConsoleKey.I, () => new MapState()));
         _actions.AddAction(new ChangeStateAction("Help", ConsoleKey.H, () => new HelpState(this)));
 

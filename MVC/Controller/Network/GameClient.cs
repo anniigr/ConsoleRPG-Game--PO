@@ -36,13 +36,13 @@ namespace ConsoleRPG.Networking
                 await _socket.ConnectAsync(_ip, _port);
                 IsActive = true;
 
-                GameLogger.GetInstance().Log("[KLIENT] Połączono! Pobieranie mapy z serwera...");
-                
+                GameLogger.GetInstance().Log("[CLIENT] Connected! Downloading map from the server...");
+
                 _ = Task.Run(ReceiveUpdatesAsync);
             }
             catch (Exception ex)
             {
-                GameLogger.GetInstance().Log($"[BŁĄD] Serwer niedostępny: {ex.Message}");
+                GameLogger.GetInstance().Log($"[ERROR] Server unavailable: {ex.Message}");
                 IsActive = false;
             }
         }

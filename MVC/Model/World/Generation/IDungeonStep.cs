@@ -230,6 +230,7 @@ public class EnemyGenerator : IDungeonStep
             cell.Enemy = enemy;
             enemy.MoveRandomly(map);
             enemy.enemiesManagerSound = map.soundManager;
+            enemy.CurrentMap = map;
             map.soundManager.Subscribe(enemy);
             return true;
         }

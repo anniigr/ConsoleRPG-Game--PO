@@ -144,13 +144,24 @@ public int Luck
     }
     private int GetItemStrengthBonus(Item item)
 {
+    if (item is IHasSlots slotted)
+        return slotted.GetTotalStrengthBonus();
     if (item.Name.Contains("(Strong)")) return 5;
     return 0;
 }
 
 private int GetItemLuckBonus(Item item)
 {
-    if (item.Name.Contains("(Unlucky)")) return -5; 
+    if (item is IHasSlots slotted)
+        return slotted.GetTotalLuckBonus();
+    if (item.Name.Contains("(Unlucky)")) return -5;
     return 0;
+}
+public int GetEquipmentWisdomBonus()
+{
+    int total = 0;
+    if (RightHand is IHasSlots r) total += r.GetTotalWisdomBonus();
+    if (LeftHand is IHasSlots l && LeftHand != RightHand) total += l.GetTotalWisdomBonus();
+    return total;
 }
 }

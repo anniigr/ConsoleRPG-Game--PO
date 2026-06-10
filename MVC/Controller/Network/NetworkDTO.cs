@@ -69,8 +69,8 @@ namespace ConsoleRPG.Network
         public int Wisdom { get; set; }
         public int Coins { get; set; }
         public int Gold { get; set; }
-        public string RightHandItem { get; set; } = "Puste";
-        public string LeftHandItem { get; set; } = "Puste";
+        public string RightHandItem { get; set; } = "Empty";
+        public string LeftHandItem { get; set; } = "Empty";
         public int InventoryCount { get; set; }
     }
 }

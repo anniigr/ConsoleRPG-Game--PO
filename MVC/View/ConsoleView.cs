@@ -6,6 +6,7 @@ using ConsoleRPG.Entities;
 using ConsoleRPG.Engine;
 using ConsoleRPG.World;
 using ConsoleRPG.Log;
+using ConsoleRPG.Items;
 
 namespace ConsoleRPG.MVC.View
 {
@@ -126,7 +127,9 @@ namespace ConsoleRPG.MVC.View
                 if (engine.player != null && itemIdx >= 0 && itemIdx < engine.player.Inventory.Count)
                 {
                     string pointer = (invState != null && itemIdx == invState.InventoryCursor) ? "> " : "  ";
-                    return $"{pointer}{engine.player.Inventory[itemIdx].Name}";
+                    var item = engine.player.Inventory[itemIdx];
+                    string slotInfo = item is IHasSlots s ? $" [{s.SlotCount} slotów]" : "";
+                    return $"{pointer}{item.Name}{slotInfo}";
                 }
                 if (engine.player != null && lineIndex == engine.player.Inventory.Count + 3) return "[H] Help";
                 return "";

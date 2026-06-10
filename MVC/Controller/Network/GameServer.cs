@@ -34,7 +34,7 @@ namespace ConsoleRPG.Networking
         {
             _isRunning = true;
             _listener.Start();
-            GameLogger.GetInstance().Log($"[SERWER] Uruchomiony na porcie {_port}. Oczekiwanie na graczy...");
+            GameLogger.GetInstance().Log($"[SERVER] Started on port {_port}. Waiting for players...");
             Task.Run(AcceptClientsAsync);
             Task.Run(EnemyLoopAsync);
         }

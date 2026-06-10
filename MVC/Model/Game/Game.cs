@@ -73,7 +73,7 @@ namespace ConsoleRPG.Engine
         {
             if (isServer)
             {
-                _enemySystem.ProcessTurn(this.map);
+                _enemySystem.ProcessTurn(this.map, this.players); 
             }
         }
 

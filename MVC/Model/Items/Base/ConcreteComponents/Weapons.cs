@@ -86,8 +86,8 @@ public abstract class LightWeapon : OneHandedWeapon
         map.soundManager.Notify(p.X,p.Y,_soundRange,map);
         Cell cell = map.GetCell(p.X,p.Y);
         cell.Items.Remove(this);
-        GameLogger.GetInstance().Log($"Picked up: {Name}.");
-    }
+        GameLogger.GetInstance().Log($"Picked up: {Name}. Hałas słyszalny w promieniu {_soundRange} kratek.");
+        }
 }
 
 public abstract class MagicWeapon : OneHandedWeapon 

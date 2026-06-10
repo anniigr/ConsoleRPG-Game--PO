@@ -41,7 +41,7 @@ public class Handle : Item, ISlottable, IHasSlots
     {
         p.Inventory.Add(this);
         map.GetCell(p.X, p.Y).Items.Remove(this);
-        GameLogger.GetInstance().Log($"Podniósłeś: {Name}.");
+        GameLogger.GetInstance().Log($"Podniósłeś: {Name}. Hałas słyszalny w promieniu {SoundRange} kratek.");
         map.soundManager.Notify(p.X, p.Y, SoundRange, map);
     }
 

@@ -17,6 +17,25 @@ This project represents a **scalable, real-time client-server system** for multi
 
 The core engineering constraint of this project was absolute adherence to **Object-Oriented Programming (OOP) principles**. The codebase strictly avoids **Run-Time Type Information (RTTI)** such as `is`, `as`, `typeof`, and type-identifying `enums`. Instead, all logic is driven by **clean polymorphism** and classical **Gang of Four (GoF) design patterns**.
 
+## 🧪 Automated Testing
+
+The solution includes an **xUnit** test project covering core domain behavior:
+
+- weapon decorators and stacked modifiers;
+- one-handed and two-handed equipment rules;
+- Visitor-based combat calculations and enemy armor;
+- player movement and collision with walls;
+- currency pickup and cell rendering priority.
+
+Run the complete test suite locally:
+
+```bash
+dotnet test ConsoleRPG_1.sln
+```
+
+The GitHub Actions workflow in `.github/workflows/tests.yml` restores, builds, and tests the solution automatically on every push and pull request to `main` or `master`.
+
+
 
 
 ## 🏗️ Architectural Highlights
